@@ -70,6 +70,7 @@ import EditDirectoryListing from "./pages/DirectoryApplications/EditDirectoryLis
 import ViewDirectoryApplication from "./pages/DirectoryApplications/ViewDirectoryApplication";
 import AccessPricing from "./pages/AccessPricing/AccessPricing";
 import AccessSubscriptions from "./pages/AccessSubscriptions/AccessSubscriptions";
+import ListingClaims from "./pages/ListingClaims/ListingClaims";
 
 // Colours come from the tokens in index.css, which index.tsx loads before this module runs.
 const theme = antdTheme();
@@ -168,6 +169,7 @@ function App() {
           <Route path="/directory-applications/add" element={<AddDirectoryListing />} />
           <Route path="/directory-applications/edit/:id" element={<EditDirectoryListing />} />
           <Route path="/directory-applications/:id" element={<ViewDirectoryApplication />} />
+          <Route path="/directory-claims" element={<ListingClaims />} />
         </Route>
       </Routes>
     </Router>

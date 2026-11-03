@@ -47,6 +47,7 @@ import {
   titleRules,
   videoProblem,
 } from "./cardRules";
+import { CARD_TYPE_OPTIONS } from "./cardType";
 import type {
   BusinessCardFormValues,
   CardLocation,
@@ -247,6 +248,8 @@ const mediaUploadCSS = `
 const CreateBusinessCard = () => {
   const [form] = Form.useForm<BusinessCardFormValues>();
   const navigate = useNavigate();
+  // A brand's title is optional (its tagline).
+  const cardType = Form.useWatch("professional_type", form);
 
   const [profileImage, setProfileImage] = useState<UploadFile[]>([]);
   const [images, setImages] = useState<GalleryImage[]>([]);
@@ -420,6 +423,7 @@ const CreateBusinessCard = () => {
       /* ================= BASIC FIELDS ================= */
       const basicFields: (keyof BusinessCardFormValues)[] = [
         "name",
+        "professional_type",
         "business_name",
         "email",
         "phone",
@@ -601,8 +605,18 @@ const CreateBusinessCard = () => {
           >
             <Row gutter={[16, 0]}>
               <Col xs={24}>
-                <Form.Item name="name" label="Full Name" rules={nameRules}>
-                  <Input placeholder="Sophia Martinez" />
+                <Form.Item
+                  name="professional_type"
+                  label="Type"
+                  initialValue="individual"
+                  extra="A brand needs no title, specialties or booking method."
+                >
+                  <Select options={CARD_TYPE_OPTIONS} />
+                </Form.Item>
+              </Col>
+              <Col xs={24}>
+                <Form.Item name="name" label={cardType === "brand" ? "Contact Name" : "Full Name"} rules={nameRules}>
+                  <Input placeholder={cardType === "brand" ? "The person we can reach" : "Sophia Martinez"} />
                 </Form.Item>
               </Col>
               <Col xs={24}>
@@ -611,8 +625,13 @@ const CreateBusinessCard = () => {
                 </Form.Item>
               </Col>
               <Col xs={24}>
-                <Form.Item name="professional_title" label="Professional Title" rules={titleRules}>
-                  <Input placeholder="Master Hair Stylist & Colorist" />
+                <Form.Item
+                  name="professional_title"
+                  label={cardType === "brand" ? "Tagline (optional)" : "Professional Title"}
+                  dependencies={["professional_type"]}
+                  rules={titleRules(cardType)}
+                >
+                  <Input placeholder={cardType === "brand" ? "Clean skincare, made in Las Vegas" : "Master Hair Stylist & Colorist"} />
                 </Form.Item>
               </Col>
               <Col xs={24}>
@@ -1213,6 +1232,9 @@ const CreateBusinessCard = () => {
 
       {/* BUSINESS LOCATIONS */}
       <Card title="Business Locations" style={{ marginBottom: 24 }}>
+        <p style={{ color: "var(--color-text-secondary)", marginTop: -4, marginBottom: 16, fontSize: 13 }}>
+          Optional: a card without a location shows no address or map.
+        </p>
         <Form.List name="locations">
           {(fields, { add, remove }) => (
             <>

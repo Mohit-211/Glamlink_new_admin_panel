@@ -41,18 +41,23 @@ const ENTITLEMENT_ROWS: EntitlementRow[] = [
   { key: "videos", label: "Videos on the card", count: true },
   { key: "edit_details", label: "Edit details once the card is live", hint: "Text, links, hours and locations." },
   { key: "edit_media", label: "Change photos, the video or the profile image once the card is live" },
-  { key: "special_offers", label: "Run special offers on the card" },
-  { key: "analytics", label: "Performance analytics", hint: "Not built yet (the pricing page says soon)." },
+  {
+    key: "analytics",
+    label: "Performance analytics",
+    hint: "Owners see their card's and page's numbers. Admins always can.",
+  },
   { key: "priority_search", label: "Priority placement in search", hint: "Not built yet (the pricing page says soon)." },
 ];
 
-/** Every entitlement of a tier, as the API checks them: whole counts and true or false. */
+/**
+ * Every entitlement of a tier, as the API checks them: whole counts and true or false. Only these keys go: special
+ * offers are retired (Nov 1), and an older answer's `special_offers` is dropped here.
+ */
 const wholeTier = (tier: Partial<Entitlements> | undefined): Entitlements => ({
   photos: Math.round(Number(tier?.photos ?? 0)),
   videos: Math.round(Number(tier?.videos ?? 0)),
   edit_details: Boolean(tier?.edit_details),
   edit_media: Boolean(tier?.edit_media),
-  special_offers: Boolean(tier?.special_offers),
   analytics: Boolean(tier?.analytics),
   priority_search: Boolean(tier?.priority_search),
 });

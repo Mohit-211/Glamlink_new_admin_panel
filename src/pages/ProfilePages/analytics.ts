@@ -12,6 +12,12 @@ export const CLICK_LABELS: Record<string, string> = {
   SOCIAL_CLICK: "Social links",
   EMAIL_CLICK: "Email",
   PHONE_CLICK: "Phone",
+  // Since Nov 3 (the owner's design): sharing the page, and its sections.
+  SHARE_CLICK: "Shares",
+  MEDIA_CLICK: "Media & Images",
+  EDUCATION_CLICK: "Education",
+  PODCAST_CLICK: "The Beauty Vault",
+  JOURNAL_CLICK: "Journal",
 };
 
 /** A kind of click in plain words; one the API adds later reads from its name ("GALLERY_CLICK" is "Gallery"). */
@@ -84,9 +90,19 @@ const PLATFORMS: Record<string, string> = {
   x: "X",
 };
 
-/** What a most-clicked target was: a product (by id), a social platform, or the link itself. */
+/** What the website sends as the target of these clicks: an id or a slug, named here. */
+const TARGET_NAMES: Record<string, (target: string) => string> = {
+  PRODUCT_CLICK: (id) => `Product #${id}`,
+  MEDIA_CLICK: (id) => `Media item #${id}`,
+  JOURNAL_CLICK: (id) => `Article #${id}`,
+  EDUCATION_CLICK: (slug) => `Education post “${slug}”`,
+  PODCAST_CLICK: (slug) => `Episode “${slug}”`,
+};
+
+/** What a most-clicked target was: a product, media item or article (by id), a post or episode, a social platform, or the link itself. */
 export const targetText = ({ event_type, event_target }: { event_type: string; event_target: string }) => {
-  if (event_type === "PRODUCT_CLICK") return `Product #${event_target}`;
+  const named = TARGET_NAMES[event_type];
+  if (named) return named(event_target);
   if (event_type === "SOCIAL_CLICK") {
     const name = event_target.toLowerCase();
     return PLATFORMS[name] ?? name.charAt(0).toUpperCase() + name.slice(1);

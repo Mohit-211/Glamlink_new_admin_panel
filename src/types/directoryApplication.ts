@@ -1,6 +1,8 @@
-// Directory applications: what the website's directory form (/directory-form-apply) sends, kept as sent for admins to
-// review, and the listings admins add. Approving one makes (or finds) the account for its email and links it; the
-// account's page is then made from the listing. Backend: website/inquiries (directoryApplication.service.js).
+// Directory applications: what the website's directory form (/directory-form-apply) sent, kept as sent for admins to
+// review, and the listings admins add. The form is retired (Nov 1): new people join through the Access form, which
+// also takes claims of Google listings (types/listingClaim.ts). Approving an application makes (or finds) the account
+// for its email and links it; the account's page is then made from the listing. Backend: website/inquiries
+// (directoryApplication.service.js).
 // The JSON fields keep what the form sent: the API checks only that each is a list (or an object), not its items, so
 // they are typed `unknown` and read defensively.
 

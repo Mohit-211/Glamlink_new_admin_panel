@@ -1,11 +1,57 @@
 import type { FormRule } from "antd";
 import { htmlToText } from "../../utils/sanitizeHtml";
-import type { PageUpdate, PageView, SocialLink } from "../../types/profile";
+import type { PageType, PageUpdate, PageView, ShippingKey, SocialLink } from "../../types/profile";
 
 // The checks the API makes on a page's fields (backend website/profiles/pageFields.js), so the form says so before
 // saving. The API still has the last word: a refusal is 400 INVALID_PAGE with `details.field`.
 
-export const LIMITS = { name: 150, tagline: 150, about: 2000, link: 500, socialTitle: 30, social: 10, slugMax: 60 } as const;
+export const LIMITS = {
+  name: 150,
+  tagline: 150,
+  intro: 300,
+  category: 60,
+  about: 2000,
+  link: 500,
+  socialTitle: 30,
+  social: 10,
+  slugMax: 60,
+} as const;
+
+/** A brand's Quick Info category (backend website/profiles/quickInfo.js): the key saved, and how the page shows it. */
+export const BRAND_CATEGORIES: { value: string; label: string }[] = [
+  { value: "skincare", label: "Skincare Brand" },
+  { value: "haircare", label: "Haircare Brand" },
+  { value: "makeup", label: "Makeup Brand" },
+  { value: "nails", label: "Nails Brand" },
+  { value: "body", label: "Body & Bath Brand" },
+  { value: "fragrance", label: "Fragrance Brand" },
+  { value: "wellness", label: "Wellness & Supplements Brand" },
+  { value: "devices", label: "Devices & Tools Brand" },
+];
+
+export const SHIPPING_OPTIONS: { value: ShippingKey; label: string }[] = [
+  { value: "local", label: "Local pickup or delivery" },
+  { value: "nationwide", label: "Ships nationwide" },
+  { value: "international", label: "Ships internationally" },
+];
+
+/** The "Not set" choice of the Quick Info selects: saved as empty. */
+export const NOT_SET = { value: "", label: "Not set" };
+
+/**
+ * What the category select offers: a brand picks one of the eight categories, anyone else a specialty by name (at
+ * most 60 characters, as the API takes it). A saved value that isn't on the list stays, so saving doesn't lose it.
+ */
+export const categoryOptions = (type: PageType | null | undefined, specialties: string[], saved: string) => {
+  const options =
+    type === "brand"
+      ? BRAND_CATEGORIES
+      : [...new Set(specialties.map((name) => name.trim()))]
+          .filter((name) => name && name.length <= LIMITS.category)
+          .map((name) => ({ value: name, label: name }));
+  const kept = saved && !options.some((option) => option.value === saved) ? [{ value: saved, label: saved }] : [];
+  return [NOT_SET, ...kept, ...options];
+};
 
 /** The page form's values. Text fields hold "" when empty; images hold the uploaded image's link, or "". */
 export interface PageFormValues {
@@ -14,11 +60,16 @@ export interface PageFormValues {
   is_featured: boolean;
   featured_order: number | null;
   tagline: string;
+  intro: string;
   about: string;
   website: string;
   social: SocialLink[];
+  /** "" for none. */
+  category: string;
+  shipping: ShippingKey | "";
   image: string;
   cover_image: string;
+  about_image: string;
 }
 
 export const NEW_PAGE_VALUES: PageFormValues = {
@@ -27,11 +78,15 @@ export const NEW_PAGE_VALUES: PageFormValues = {
   is_featured: false,
   featured_order: 0,
   tagline: "",
+  intro: "",
   about: "",
   website: "",
   social: [],
+  category: "",
+  shipping: "",
   image: "",
   cover_image: "",
+  about_image: "",
 };
 
 /** The form's values for a saved page. The address is the one the page answers to: its own slug, else its card's handle. */
@@ -41,11 +96,15 @@ export const toFormValues = ({ slug, page }: PageView): PageFormValues => ({
   is_featured: page.is_featured,
   featured_order: page.featured_order,
   tagline: page.tagline ?? "",
+  intro: page.intro ?? "",
   about: page.about ?? "",
   website: page.website ?? "",
   social: page.social ?? [],
+  category: page.category ?? "",
+  shipping: page.shipping ?? "",
   image: page.image ?? "",
   cover_image: page.cover_image ?? "",
+  about_image: page.about_image ?? "",
 });
 
 /**
@@ -63,13 +122,17 @@ export const toPageUpdate = (values: PageFormValues, savedSlug: string): PageUpd
     is_featured: values.is_featured,
     featured_order: values.featured_order ?? 0,
     tagline: text(values.tagline),
+    intro: text(values.intro),
     about: htmlToText(values.about).trim() ? values.about : null,
     website: text(values.website),
     social: values.social.length
       ? values.social.map((link) => ({ title: link.title.trim(), url: link.url.trim() }))
       : null,
+    category: values.category || null,
+    shipping: values.shipping || null,
     image: values.image || null,
     cover_image: values.cover_image || null,
+    about_image: values.about_image || null,
   };
 };
 
@@ -83,20 +146,29 @@ export interface PageFallbacks {
   /** The address is the card's handle: the page has no slug of its own. */
   addressFromCard: boolean;
   tagline: string | null;
+  /** The card bio as plain text (only a card's: a listing's bio isn't used). */
+  intro: string | null;
   about: string | null;
   website: string | null;
   social: SocialLink[] | null;
   image: string | null;
+  /** The card gallery's cover photo. */
+  cover_image: string | null;
+  /** The page's first photo in Media & Images, else the card gallery's cover photo. */
+  about_image: string | null;
 }
 
 export const fallbacksOf = ({ slug, page, public: shown }: PageView): PageFallbacks => ({
   source: shown.access_card ? "Access card" : shown.listing ? "directory listing" : null,
   addressFromCard: !page.slug && Boolean(slug),
   tagline: page.tagline ? null : shown.tagline,
+  intro: page.intro ? null : (shown.intro ?? null),
   about: page.about ? null : shown.about,
   website: page.website ? null : shown.website,
   social: page.social ? null : shown.social,
   image: page.image ? null : shown.image,
+  cover_image: page.cover_image ? null : shown.cover_image,
+  about_image: page.about_image ? null : (shown.about_image ?? null),
 });
 
 // The API makes a slug of what it gets ("Kate Sue" is kate-sue); the form asks for one already written that way.

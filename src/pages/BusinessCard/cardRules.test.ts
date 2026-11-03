@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import type { FormInstance, FormRule } from "antd";
-import { bioRules, existingCardId, phoneRules, showCardError, videoProblem } from "./cardRules";
+import { bioRules, existingCardId, phoneRules, showCardError, titleRules, videoProblem } from "./cardRules";
 
 const run = (rules: FormRule[], value: unknown) =>
   Promise.all(rules.map((rule) => (typeof rule === "function" ? rule({} as FormInstance) : rule).validator?.({} as never, value, () => {})));
+
+const requires = (rules: FormRule[]) => rules.some((rule) => typeof rule === "object" && rule.required === true);
 
 const apiError = (status: number, data: unknown) =>
   new AxiosError("Request failed", "ERR_BAD_REQUEST", {} as InternalAxiosRequestConfig, null, {
@@ -16,6 +18,15 @@ const apiError = (status: number, data: unknown) =>
   });
 
 describe("card form rules", () => {
+  it("wants a title from a professional only: a brand's tagline is optional", () => {
+    expect(requires(titleRules("individual"))).toBe(true);
+    // Before the type loads, as for a card saved before types: a professional's.
+    expect(requires(titleRules(undefined))).toBe(true);
+    expect(requires(titleRules("brand"))).toBe(false);
+    // Still at most 100 characters.
+    expect(titleRules("brand")).toContainEqual({ max: 100, message: "At most 100 characters" });
+  });
+
   it("counts the bio's text, not its markup, against 80 characters", async () => {
     await expect(run(bioRules, `<p><strong>${"a".repeat(80)}</strong></p>`)).resolves.toBeDefined();
     await expect(run(bioRules, `<p>${"a".repeat(81)}</p>`)).rejects.toThrow("at most 80 characters (now 81)");
@@ -44,6 +55,19 @@ describe("card API errors", () => {
     expect(showCardError(form, error)).toBe("Add an Instagram handle.");
     expect(form.setFields).toHaveBeenCalledWith([{ name: "instagram_links", errors: ["Add an Instagram handle."] }]);
     expect(showCardError(form, apiError(500, { message: "Boom" }))).toBeNull();
+  });
+
+  it("puts a professional's missing booking method on the Ways To Connect field", () => {
+    const form = { setFields: vi.fn<FormInstance["setFields"]>(), scrollToField: vi.fn<FormInstance["scrollToField"]>() } as unknown as FormInstance;
+    const error = apiError(400, {
+      code: "INVALID_CARD",
+      message: "Please select Preferred Booking Method.",
+      details: { field: "preferred_booking_methods" },
+    });
+    expect(showCardError(form, error)).toBe("Please select Preferred Booking Method.");
+    expect(form.setFields).toHaveBeenCalledWith([
+      { name: "preferred_booking_method", errors: ["Please select Preferred Booking Method."] },
+    ]);
   });
 
   it("recognises CARD_EXISTS", () => {

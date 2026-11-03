@@ -34,6 +34,13 @@ $border: var(--color-border);
     font-size: 13px;
   }
 
+  .ao-filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
   .ao-search {
     input {
       height: 42px;
@@ -59,51 +66,6 @@ $border: var(--color-border);
     .ant-table-tbody > tr:hover > td {
       background: $brand-soft;
     }
-  }
-
-  // ---- status pills ----
-  .ao-pill {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 10.5px;
-    font-weight: 700;
-    letter-spacing: 0.2px;
-  }
-
-  .ao-pill-paid {
-    background: var(--color-success-soft);
-    color: var(--color-success);
-  }
-
-  .ao-pill-failed {
-    background: var(--color-error-soft);
-    color: var(--color-error);
-  }
-
-  .ao-pill-refunded {
-    background: var(--color-warning-soft);
-    color: var(--color-warning);
-  }
-
-  .ao-pill-pending {
-    background: var(--color-surface-muted);
-    color: var(--color-text-secondary);
-  }
-
-  .ao-pill-processing {
-    background: var(--color-warning-soft);
-    color: var(--color-warning);
-  }
-
-  .ao-pill-shipped {
-    background: var(--color-info-soft);
-    color: var(--color-info);
-  }
-
-  .ao-pill-delivered {
-    background: var(--color-success-soft);
-    color: var(--color-success);
   }
 
   .ao-fulfillment-select {
@@ -133,6 +95,54 @@ $border: var(--color-border);
       background: $brand-soft;
     }
   }
+}
+
+// ---- status pills: in the list and in the order details (a modal, outside .ao-page) ----
+.ao-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.ao-pill-paid {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.ao-pill-failed,
+.ao-pill-cancelled,
+.ao-pill-disputed {
+  background: var(--color-error-soft);
+  color: var(--color-error);
+}
+
+.ao-pill-refunded,
+.ao-pill-partially_refunded {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.ao-pill-pending {
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+}
+
+.ao-pill-processing {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.ao-pill-shipped {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
+
+.ao-pill-delivered {
+  background: var(--color-success-soft);
+  color: var(--color-success);
 }
 
 // ---- shared modal styling (order details + access card) ----
@@ -253,6 +263,42 @@ $border: var(--color-border);
 
   .ao-fulfillment-note {
     margin: -6px 0 12px;
+  }
+
+  .ao-cancelled-alert {
+    margin-bottom: 20px;
+  }
+
+  // A refund or a dispute made in Stripe, under the cancellation.
+  .ao-money-alert {
+    margin-bottom: 16px;
+  }
+
+  .ao-stripe-id {
+    word-break: break-all;
+    font-size: 12px;
+  }
+
+  // Cancel order on the left, Save Changes on the right.
+  .ao-modal-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+// ---- "Cancel order" confirmation ----
+.ao-cancel-modal {
+  .ao-label-alert {
+    margin-bottom: 14px;
+  }
+
+  .ao-cancel-reason {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
   }
 }
 

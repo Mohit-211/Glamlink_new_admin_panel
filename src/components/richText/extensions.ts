@@ -189,6 +189,30 @@ export const createMentionExtension = (getOptions: () => MentionOptions) =>
     },
   });
 
+// Article mode: only what the API keeps in an education post (glamlink-backend
+// src/website/profiles/articleHtml.js): h2 and h3, paragraphs and line breaks, bold, italic,
+// lists, quotes, links and images. Anything else that is loaded or pasted is dropped (its
+// text stays), so the editor shows what will be saved.
+export const buildArticleExtensions = () => [
+  StarterKit.configure({
+    heading: { levels: [2, 3] },
+    underline: false,
+    strike: false,
+    code: false,
+    codeBlock: false,
+    horizontalRule: false,
+    link: {
+      openOnClick: false,
+      HTMLAttributes: { target: null, rel: null },
+    },
+  }),
+  Image.configure({ inline: true }),
+];
+
+/** h1 becomes h2 and h4-h6 become h3, as the API does for an article. `html` must be sanitized markup. */
+export const toArticleHeadings = (html: string) =>
+  html.replace(/<(\/?)h1(?=[\s>])/gi, "<$1h2").replace(/<(\/?)h[4-6](?=[\s>])/gi, "<$1h3");
+
 // Everything RichTextEditor loads. `getOptions` is passed to the "@" mention extension.
 export const buildExtensions = (getOptions: () => MentionOptions) => [
   StarterKit.configure({

@@ -15,7 +15,6 @@ import {
   Tag,
   Collapse,
   Checkbox,
-  type UploadFile,
 } from "antd";
 import {
   UploadOutlined,
@@ -32,7 +31,6 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router";
 import RichTextEditor from "../../../components/RichTextEditor";
-import ImgCrop from "antd-img-crop";
 import { DatePicker } from "antd";
 import dayjs from "dayjs";
 import {
@@ -53,6 +51,7 @@ import styles from "./AddJournal.module.scss";
 import { apiErrorMessage, errorMessage } from "../../../utils/apiError";
 import { showFieldError } from "../../../utils/formErrors";
 import { warnUnmatchedMentions } from "./FeaturedPeople";
+import JournalImageField, { type PickedImage } from "../JournalImageField";
 import type { MentionSource } from "../../../components/richText/extensions";
 import type {
   Author,
@@ -102,7 +101,7 @@ const AddBlog = () => {
   const [form] = Form.useForm<JournalFormValues>();
   const navigate = useNavigate();
 
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [cover, setCover] = useState<PickedImage | null>(null);
   const [content, setContent] = useState("");
   const [authors, setAuthors] = useState<Author[]>([]);
   const [categories, setCategories] = useState<JournalCategory[]>([]);
@@ -356,8 +355,8 @@ const AddBlog = () => {
         );
       }
 
-      if (fileList.length > 0) {
-        formData.append("images", fileList[0].originFileObj!);
+      if (cover?.file) {
+        formData.append("images", cover.file);
       }
 
       // Downloads
@@ -780,64 +779,7 @@ const AddBlog = () => {
           title="Cover image"
           hint="Shown as the thumbnail in journal listings"
         >
-          <div className={styles.coverUploadArea}>
-            <div className={styles.coverPreview}>
-              {fileList.length > 0 ? (
-                <img
-                  src={URL.createObjectURL(fileList[0].originFileObj!)}
-                  alt="Cover preview"
-                />
-              ) : (
-                <div className={styles.coverEmpty}>
-                  <PictureOutlined style={{ fontSize: 22 }} />
-                  <span>No image selected</span>
-                </div>
-              )}
-            </div>
-
-            <div className={styles.coverActions}>
-              <ImgCrop
-                aspect={16 / 9}
-                quality={1}
-                showGrid
-                rotationSlider
-                modalTitle="Crop cover image"
-                modalOk="Apply crop"
-                modalCancel="Cancel"
-              >
-                <Upload
-                  beforeUpload={(file) => {
-                    setFileList([
-                      {
-                        uid: file.uid,
-                        name: file.name,
-                        status: "done",
-                        originFileObj: file,
-                      },
-                    ]);
-                    return false;
-                  }}
-                  fileList={[]}
-                  showUploadList={false}
-                  maxCount={1}
-                >
-                  <Button icon={<UploadOutlined />}>
-                    {fileList.length > 0 ? "Replace image" : "Upload image"}
-                  </Button>
-                </Upload>
-              </ImgCrop>
-
-              {fileList.length > 0 && (
-                <Button danger type="text" onClick={() => setFileList([])}>
-                  Remove image
-                </Button>
-              )}
-
-              <span className={styles.coverHelp}>
-                Recommended ratio 16:9. JPG or PNG.
-              </span>
-            </div>
-          </div>
+          <JournalImageField kind="cover" value={cover} onChange={setCover} />
         </SectionCard>
 
         {/* DOWNLOADS */}

@@ -53,7 +53,8 @@ import {
 import { apiErrorStatus } from "../../utils/apiError";
 import SafeHtml from "../../components/SafeHtml";
 import { singleSorter, type TableChangeHandler, type TableParams, type WithIndex } from "../../utils/table";
-import type { BusinessCard, PurchaseInfo } from "../../types/businessCard";
+import type { BusinessCard, CardType, PurchaseInfo } from "../../types/businessCard";
+import { CARD_TYPE_COLOR, CARD_TYPE_LABEL, CARD_TYPE_OPTIONS, cardTypeOf } from "./cardType";
 
 const BusinessCard = () => {
   const navigate = useNavigate();
@@ -65,6 +66,9 @@ const BusinessCard = () => {
   const [qrModalOpen, setQrModalOpen] = useState(false);
   // Live cards, or the guest drafts the API leaves out of the list.
   const [view, setView] = useState<"cards" | "drafts">("cards");
+  // Professionals' cards, brands', or both; applied on top of the search.
+  const [typeFilter, setTypeFilter] = useState<CardType | undefined>(undefined);
+  const shownCards = typeFilter ? data.filter((card) => cardTypeOf(card) === typeFilter) : data;
 
   const openViewModal = (record: BusinessCard) => {
     setSelectedCard(record);
@@ -255,6 +259,15 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
           </div>
         </div>
       ),
+    },
+    {
+      title: "Type",
+      dataIndex: "professional_type",
+      width: 110,
+      render: (_, record) => {
+        const type = cardTypeOf(record);
+        return <Tag color={CARD_TYPE_COLOR[type]}>{CARD_TYPE_LABEL[type]}</Tag>;
+      },
     },
     {
       title: "Card",
@@ -614,6 +627,16 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
               { value: "drafts", label: "Guest drafts" },
             ]}
           />
+          <Select<CardType>
+            allowClear
+            size="large"
+            placeholder="All types"
+            aria-label="Type"
+            value={typeFilter}
+            onChange={setTypeFilter}
+            options={CARD_TYPE_OPTIONS}
+            style={{ width: 150 }}
+          />
           <Input
             type="search"
             onChange={(e) => onSearch(e.target.value)}
@@ -645,7 +668,7 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
         <Table
           columns={columns}
           rowKey={(record) => record.id}
-          dataSource={data}
+          dataSource={shownCards}
           pagination={tableParams.pagination}
           loading={loading}
           onChange={handleTableChange}
@@ -704,6 +727,9 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
                       {selectedCard?.name}
                     </h2>
                     <Space size={4}>
+                      <Tag color={CARD_TYPE_COLOR[cardTypeOf(selectedCard)]}>
+                        {CARD_TYPE_LABEL[cardTypeOf(selectedCard)]}
+                      </Tag>
                       <Tag
                         color={
                           selectedCard.status === "accepted"

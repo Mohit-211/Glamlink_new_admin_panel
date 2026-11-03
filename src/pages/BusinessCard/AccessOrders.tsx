@@ -15,6 +15,7 @@ import {
   Radio,
   Spin,
   Tag,
+  Typography,
   type TableColumnsType,
 } from "antd";
 import {
@@ -25,6 +26,8 @@ import {
   PrinterOutlined,
   ExportOutlined,
   StopOutlined,
+  CloseCircleOutlined,
+  CreditCardOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router";
 import "./AccessOrders.scss";
@@ -36,10 +39,16 @@ import {
   GetAccessOrderRates,
   BuyAccessOrderLabel,
   VoidAccessOrderLabel,
+  CancelAccessOrder,
 } from "../../services/Api/BusinessCardApi";
-import { apiErrorCode, apiErrorMessage } from "../../utils/apiError";
+import { apiErrorCode, apiErrorMessage, apiErrorStatus } from "../../utils/apiError";
 import { money } from "../../utils/money";
-import type { AccessOrder, FulfillmentStatus, FulfillmentUpdate } from "../../types/businessCard";
+import type {
+  AccessOrder,
+  AccessOrderListParams,
+  FulfillmentStatus,
+  FulfillmentUpdate,
+} from "../../types/businessCard";
 import type { ShippingRate } from "../../types/access";
 
 const VEGAS_TZ = "America/Los_Angeles";
@@ -80,12 +89,211 @@ const formatVegasFull = (dateStr: string | null | undefined) => {
   );
 };
 
+/**
+ * Cancelled (Cancel order, CancelAccessOrder): the API sets `cancelled_at`. The payment status stays what the money
+ * did ("paid": any refund is made by hand), and only an unshipped keychain's fulfillment reads "cancelled".
+ */
+const isCancelled = (order: AccessOrder | null | undefined) =>
+  Boolean(order?.cancelled_at) || order?.payment_status === "cancelled" || order?.fulfillment_status === "cancelled";
+
+/**
+ * The order has a keychain to ship: Access Pro bought alone has no fulfillment status. A cancelled order's address
+ * still says whether it had one.
+ */
 const isPhysical = (order: AccessOrder | null | undefined) =>
-  order?.fulfillment_status !== null && order?.fulfillment_status !== undefined;
+  order?.fulfillment_status === "cancelled"
+    ? Boolean(order.shipping_address_line_1)
+    : order?.fulfillment_status !== null && order?.fulfillment_status !== undefined;
 
 const Pill = ({ text, type }: { text?: string; type?: string | null }) => (
   <span className={`ao-pill ao-pill-${type}`}>{text}</span>
 );
+
+/** A payment status as its pill says it ("partially_refunded" is "PARTLY REFUNDED"). */
+const paymentWords = (status: string | null | undefined) =>
+  status === "partially_refunded" ? "PARTLY REFUNDED" : status?.replaceAll("_", " ").toUpperCase();
+
+/**
+ * One order as its details answer it (GET /businessCard/access-orders/:id): since Nov 1 also what Stripe recorded
+ * (a refund or a dispute made there, by the webhook) and the checkout that bought it.
+ */
+interface AccessOrderDetail extends AccessOrder {
+  /** Dollars refunded so far, in Stripe's dashboard. */
+  refunded_amount?: number | string | null;
+  refunded_at?: string | null;
+  /** Stripe's: needs_response, under_review, won, lost, warning_needs_response, … */
+  dispute_status?: string | null;
+  disputed_at?: string | null;
+  checkout?: {
+    id: number;
+    /** free, nfc_only, subscription_only or nfc_with_subscription */
+    plan_type: string | null;
+    status: string | null;
+    stripe_subscription_id: string | null;
+    stripe_payment_intent_id: string | null;
+    stripe_invoice_id: string | null;
+  } | null;
+}
+
+const dollars = (amount: number | string | null | undefined) => `$${Number(amount || 0).toFixed(2)}`;
+
+/** Stripe's dispute statuses, worded for people. */
+const DISPUTE_WORDS: Partial<Record<string, string>> = {
+  needs_response: "needs a response",
+  warning_needs_response: "an inquiry that needs a response",
+  under_review: "under review",
+  warning_under_review: "an inquiry under review",
+  won: "won",
+  lost: "lost",
+  warning_closed: "an inquiry, closed",
+  prevented: "prevented",
+};
+
+/** A dispute that no longer holds the money: the payment reads as it did before. */
+const DISPUTE_SETTLED = ["won", "warning_closed", "prevented"];
+
+const PLAN_WORDS: Partial<Record<string, string>> = {
+  subscription_only: "Access Pro",
+  nfc_only: "NFC keychain",
+  nfc_with_subscription: "Access Pro + NFC keychain",
+  free: "Free",
+};
+
+/**
+ * What happened to the money after the order, as Stripe told the API: a refund (in full or in part) and a dispute,
+ * each made in Stripe's dashboard. Neither changes a plan, a seat or shipping. Also a purchase the API took but
+ * couldn't give (its `cancel_reason` says so) while the order isn't cancelled.
+ */
+const MoneyEvents = ({ order }: { order: AccessOrderDetail }) => {
+  const refunded = Number(order.refunded_amount || 0);
+  const paid = Number(order.amount_paid || 0);
+  const wasRefunded =
+    refunded > 0 || Boolean(order.refunded_at) || order.payment_status === "refunded" || order.payment_status === "partially_refunded";
+  const partly = order.payment_status === "partially_refunded" || (refunded > 0 && refunded < paid);
+  const when = (date: string | null | undefined) => (date ? ` on ${formatVegasFull(date)}` : "");
+  const disputed = Boolean(order.dispute_status || order.disputed_at) || order.payment_status === "disputed";
+  const settled = Boolean(order.dispute_status && DISPUTE_SETTLED.includes(order.dispute_status));
+  const disputeWords = order.dispute_status
+    ? (DISPUTE_WORDS[order.dispute_status] ?? order.dispute_status.replaceAll("_", " "))
+    : null;
+
+  return (
+    <>
+      {wasRefunded && (
+        <Alert
+          className="ao-money-alert"
+          type="warning"
+          showIcon
+          title={partly ? "Partly refunded" : "Refunded in full"}
+          description={
+            (partly
+              ? `${dollars(refunded)} of ${dollars(paid)} was refunded in Stripe${when(order.refunded_at)}.`
+              : `${dollars(refunded || paid)} was refunded in Stripe${when(order.refunded_at)}.`) +
+            (isCancelled(order)
+              ? ""
+              : " A refund changes no plan, seat or shipping: cancel the order too if nothing more should happen.")
+          }
+        />
+      )}
+      {disputed && (
+        <Alert
+          className="ao-money-alert"
+          type={settled ? "info" : "error"}
+          showIcon
+          title={settled ? "A dispute was settled" : order.dispute_status === "lost" ? "Dispute lost" : "Disputed"}
+          description={[
+            `The customer's bank disputed the payment${when(order.disputed_at)}.`,
+            disputeWords ? `Stripe says: ${disputeWords}.` : "",
+            settled
+              ? "The payment stands."
+              : order.dispute_status === "lost"
+                ? "The money went back to the customer."
+                : "Answer it in Stripe's dashboard before its deadline.",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        />
+      )}
+      {order.cancel_reason && !isCancelled(order) && (
+        <Alert className="ao-money-alert" type="warning" showIcon title="Paid but not given" description={order.cancel_reason} />
+      )}
+    </>
+  );
+};
+
+/** What bought the order at Stripe, to find it in Stripe's dashboard (a refund or a dispute is handled there). */
+const CheckoutSummary = ({ checkout }: { checkout: NonNullable<AccessOrderDetail["checkout"]> }) => {
+  const stripeIds: [string, string | null][] = [
+    ["Payment", checkout.stripe_payment_intent_id],
+    ["Subscription", checkout.stripe_subscription_id],
+    ["Invoice", checkout.stripe_invoice_id],
+  ];
+  return (
+    <>
+      <div className="ao-section-label">
+        <CreditCardOutlined /> Checkout
+      </div>
+      <div className="ao-box">
+        <div className="ao-info-grid ao-label-grid">
+          <div className="ao-info-item">
+            <div className="label">Plan</div>
+            <div className="value">{(checkout.plan_type && PLAN_WORDS[checkout.plan_type]) || checkout.plan_type || "—"}</div>
+          </div>
+          <div className="ao-info-item">
+            <div className="label">Checkout status</div>
+            <div className="value">{checkout.status || "—"}</div>
+          </div>
+          {stripeIds
+            .filter(([, id]) => id)
+            .map(([label, id]) => (
+              <div className="ao-info-item" key={label}>
+                <div className="label">{label} in Stripe</div>
+                <div className="value">
+                  <Typography.Text copyable code className="ao-stripe-id">
+                    {id}
+                  </Typography.Text>
+                </div>
+              </div>
+            ))}
+        </div>
+      </div>
+    </>
+  );
+};
+
+const PAGE_SIZE = 50;
+
+/** The statuses an admin sets by hand; "cancelled" comes only from cancelling the order. */
+const FULFILLMENT_OPTIONS: { value: FulfillmentStatus; label: string }[] = [
+  { value: "pending", label: "Pending" },
+  { value: "processing", label: "Processing" },
+  { value: "shipped", label: "Shipped" },
+  { value: "delivered", label: "Delivered" },
+];
+
+const FULFILLMENT_FILTERS = [...FULFILLMENT_OPTIONS, { value: "cancelled" as const, label: "Cancelled" }];
+
+/** "cancelled" is the API's `cancelled=true`, not a payment status (a cancelled order keeps what was paid). */
+const PAYMENT_FILTERS = [
+  { value: "paid", label: "Paid" },
+  { value: "failed", label: "Failed" },
+  { value: "refunded", label: "Refunded" },
+  { value: "partially_refunded", label: "Partly refunded" },
+  { value: "disputed", label: "Disputed" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+/** What the list asks the API for: the page, the search and the two status filters. */
+interface Filters {
+  page: number;
+  search: string;
+  payment_status?: string;
+  fulfillment_status?: FulfillmentStatus;
+}
+
+/** What Cancel order does, word for word in its confirmation. */
+const CANCEL_EXPLANATION =
+  "Marks the order cancelled, stops an unshipped keychain, and ends the Access Pro subscription bought with it right away. No refund is made: refund a keychain manually in Stripe if needed. Subscriptions are not refunded.";
 
 // ---- Shipping labels (Shippo) ----
 
@@ -142,10 +350,14 @@ interface LabelSectionProps {
   onVoid: () => Promise<void>;
 }
 
-/** The order's label and tracking, with buying, printing and voiding the label. Only for orders that ship. */
+/**
+ * The order's label and tracking, with buying, printing and voiding the label. Only for orders that ship. A cancelled
+ * order shows them for the record, with no buying or voiding: voiding here would put its fulfillment back to pending.
+ */
 const LabelSection = ({ order, onBuy, onVoid }: LabelSectionProps) => {
   const labelBought = hasLabel(order);
   const moving = isOnItsWay(order);
+  const cancelled = isCancelled(order);
 
   return (
     <>
@@ -199,7 +411,14 @@ const LabelSection = ({ order, onBuy, onVoid }: LabelSectionProps) => {
           </div>
         </div>
 
-        {labelBought ? (
+        {cancelled ? (
+          labelBought &&
+          !moving && (
+            <div className="ao-label-note">
+              The order is cancelled. If its label is unused, void it in Shippo's dashboard for a refund.
+            </div>
+          )
+        ) : labelBought ? (
           <div className="ao-label-actions">
             {order.label_url && (
               <Button
@@ -375,73 +594,127 @@ const BuyLabelModal = ({ order, onClose, onBought, onStale }: BuyLabelModalProps
   );
 };
 
+interface CancelOrderModalProps {
+  order: AccessOrder;
+  onClose: () => void;
+  onCancelled: (order: AccessOrder) => void;
+  /** The API refused because the order changed meanwhile (cancelled, or shipped): show it as it is now. */
+  onStale: () => void;
+}
+
+// Mounted only while open, so each opening starts with no reason and no refusal.
+const CancelOrderModal = ({ order, onClose, onCancelled, onStale }: CancelOrderModalProps) => {
+  const [reason, setReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+
+  const cancel = async () => {
+    try {
+      setCancelling(true);
+      setFailure(null);
+      const res = await CancelAccessOrder(order.id, reason.trim() || undefined);
+      message.success(`Order ${order.order_number} cancelled`);
+      onCancelled(res.data.data);
+    } catch (err) {
+      // 409: already cancelled, or its keychain has shipped; the API's message says which.
+      setFailure(apiErrorMessage(err) || "Couldn't cancel the order");
+      if (apiErrorStatus(err) === 409) onStale();
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  return (
+    <Modal
+      open
+      className="ao-cancel-modal"
+      title={`Cancel order ${order.order_number}?`}
+      okText="Cancel order"
+      okButtonProps={{ danger: true }}
+      cancelText="Keep the order"
+      onOk={cancel}
+      confirmLoading={cancelling}
+      onCancel={onClose}
+      width={540}
+      destroyOnHidden
+    >
+      <p>{CANCEL_EXPLANATION}</p>
+      {failure && <Alert className="ao-label-alert" type="error" showIcon title={failure} />}
+      <label className="ao-cancel-reason" htmlFor="ao-cancel-reason">
+        Reason (optional)
+      </label>
+      <Input.TextArea
+        id="ao-cancel-reason"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="e.g. Ordered twice by mistake"
+        rows={2}
+        maxLength={255}
+      />
+    </Modal>
+  );
+};
+
 const AccessOrders = () => {
   const [orders, setOrders] = useState<AccessOrder[]>([]);
-  const [backupOrders, setBackupOrders] = useState<AccessOrder[]>([]);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<Filters>({ page: 1, search: "" });
+  const [searchText, setSearchText] = useState("");
+  // How many orders match, and the page size the API used (it may cap the one asked for).
+  const [total, setTotal] = useState(0);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
 
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<AccessOrder | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<AccessOrderDetail | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
   const [editStatus, setEditStatus] = useState<FulfillmentStatus | undefined>(undefined);
   const [editTracking, setEditTracking] = useState("");
   const [editTrackingLink, setEditTrackingLink] = useState("");
-  // How many orders the API counts, when that's more than it sent.
-  const [total, setTotal] = useState<number | null>(null);
   const [buyingLabelFor, setBuyingLabelFor] = useState<AccessOrder | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState<AccessOrder | null>(null);
   // The admin's order email links to /access-orders/:id.
   const { id: routeId } = useParams();
   const navigate = useNavigate();
 
-  // Fetch once, filter client-side — same reliable pattern as the
-  // Business Card list page, so search always works regardless of
-  // backend query support.
-  const getData = async () => {
-    try {
-      setLoading(true);
-      const res = await GetAllAccessOrders({ page: 1, limit: 200 });
-      const body = res?.data?.data;
-      const rows = body?.data;
-      const list = Array.isArray(rows) ? rows : [];
-      // The API answers only its newest 10 for now (see GetAllAccessOrders); its total counts them all.
-      const all = body?.pagination?.total;
-      setTotal(typeof all === "number" ? all : null);
-
-      setOrders(list);
-      setBackupOrders(list);
-    } catch (e) {
-      console.error(e);
-      message.error("Failed to load Access Orders");
-      setOrders([]);
-      setBackupOrders([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // The API pages, searches and filters. One request per change of filters; the answer to a superseded one is dropped.
   useEffect(() => {
-    getData();
-  }, []);
+    let current = true;
+    const { page, search, payment_status, fulfillment_status } = filters;
+    const params: AccessOrderListParams = { page, limit: PAGE_SIZE };
+    if (search) params.search = search;
+    if (payment_status === "cancelled") params.cancelled = "true";
+    else if (payment_status) params.payment_status = payment_status;
+    if (fulfillment_status) params.fulfillment_status = fulfillment_status;
+    setLoading(true);
+    GetAllAccessOrders(params)
+      .then((res) => {
+        if (!current) return;
+        const body = res.data.data;
+        const rows = Array.isArray(body?.data) ? body.data : [];
+        setOrders(rows);
+        setTotal(body?.pagination?.total ?? rows.length);
+        setPageSize(body?.pagination?.limit || PAGE_SIZE);
+      })
+      .catch((err) => {
+        console.error("Error loading access orders:", err);
+        if (current) message.error(apiErrorMessage(err) || "Failed to load Access Orders");
+      })
+      .finally(() => {
+        if (current) setLoading(false);
+      });
+    return () => {
+      current = false;
+    };
+  }, [filters]);
 
-  const onSearch = (value: string) => {
-    const term = value?.toLowerCase().trim();
-    setSearch(value);
-
-    if (!term) {
-      setOrders(backupOrders);
-      return;
-    }
-
-    setOrders(
-      backupOrders.filter(
-        (o) =>
-          o.order_number?.toLowerCase().includes(term) ||
-          o.customer_name?.toLowerCase().includes(term) ||
-          o.customer_email?.toLowerCase().includes(term),
-      ),
-    );
-  };
+  // The list follows the search box 300 ms after the last key, from the first page.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const search = searchText.trim();
+      setFilters((f) => (f.search === search ? f : { ...f, search, page: 1 }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
   const openOrderDetails = async (id: number | string) => {
     try {
@@ -469,13 +742,12 @@ const AccessOrders = () => {
   };
 
   /**
-   * Shows an order the API answered (after buying or voiding its label) in the list and the open details. Those
-   * answers leave out the card link, so it's kept from before.
+   * Shows an order the API answered (after buying or voiding its label, or cancelling it) in the list and the open
+   * details. Those answers leave out the card link, so it's kept from before.
    */
   const showOrder = (order: AccessOrder) => {
     const merge = (list: AccessOrder[]) => list.map((o) => (o.id === order.id ? { ...o, ...order } : o));
     setOrders(merge);
-    setBackupOrders(merge);
     setSelectedOrder((current) => (current?.id === order.id ? { ...current, ...order } : current));
     // The form below the label holds the tracking number too: keep it in step, or saving it would undo the label's.
     if (selectedOrder?.id === order.id) {
@@ -512,7 +784,6 @@ const AccessOrders = () => {
     const update = (list: AccessOrder[]) =>
       list.map((o) => (o.id === orderId ? { ...o, ...changes } : o));
     setOrders(update);
-    setBackupOrders(update);
   };
 
   const quickUpdateFulfillment = async (orderId: number, status: FulfillmentStatus) => {
@@ -524,7 +795,6 @@ const AccessOrders = () => {
       message.success(`Marked as ${status.toUpperCase()}`);
     } catch (e) {
       setOrders(previous);
-      setBackupOrders(previous);
       message.error(
         apiErrorMessage(e) || "Failed to update fulfillment status",
       );
@@ -599,10 +869,13 @@ const AccessOrders = () => {
           <div style={{ fontWeight: 600, fontSize: 13 }}>
             ${Number(amount || 0).toFixed(2)}
           </div>
-          <Pill
-            text={record.payment_status?.toUpperCase()}
-            type={record.payment_status}
-          />
+          {/* A cancelled payment status is shown once, by the Cancelled tag. */}
+          {record.payment_status !== "cancelled" && (
+            <Pill
+              text={paymentWords(record.payment_status)}
+              type={record.payment_status}
+            />
+          )}
         </div>
       ),
     },
@@ -633,19 +906,18 @@ const AccessOrders = () => {
       title: "Fulfillment",
       dataIndex: "fulfillment_status",
       render: (status, record) =>
-        isPhysical(record) ? (
+        isCancelled(record) ? (
+          <Tooltip title="Nothing more ships for it, and any Access Pro bought with it has ended.">
+            <Tag color="red">Cancelled</Tag>
+          </Tooltip>
+        ) : isPhysical(record) ? (
           <Select
             size="small"
             className="ao-fulfillment-select"
             value={status}
             style={{ width: 125 }}
             onChange={(value) => quickUpdateFulfillment(record.id, value)}
-            options={[
-              { value: "pending", label: "Pending" },
-              { value: "processing", label: "Processing" },
-              { value: "shipped", label: "Shipped" },
-              { value: "delivered", label: "Delivered" },
-            ]}
+            options={FULFILLMENT_OPTIONS}
           />
         ) : (
           <span style={{ color: "var(--color-text-disabled)", fontSize: 11 }}>Nothing to ship</span>
@@ -724,19 +996,39 @@ const AccessOrders = () => {
           <h3 className="ao-title">Access Orders</h3>
           <p className="ao-subtitle">
             Fulfill NFC keychain shipments · times shown in Las Vegas (Pacific)
-            {total !== null && total > backupOrders.length &&
-              ` · showing the newest ${backupOrders.length} of ${total} orders`}
           </p>
         </div>
 
-        <Input
-          type="search"
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
-          placeholder="Search by name, email or order #"
-          prefix={<SearchOutlined />}
-          className="ao-search"
-          size="large" />
+        <div className="ao-filters">
+          <Input
+            type="search"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="Search by name, email or order #"
+            prefix={<SearchOutlined />}
+            className="ao-search"
+            size="large" />
+          <Select<string>
+            allowClear
+            size="large"
+            placeholder="Any payment"
+            aria-label="Payment"
+            value={filters.payment_status}
+            onChange={(value) => setFilters((f) => ({ ...f, payment_status: value, page: 1 }))}
+            options={PAYMENT_FILTERS}
+            style={{ width: 150 }}
+          />
+          <Select<FulfillmentStatus>
+            allowClear
+            size="large"
+            placeholder="Any fulfillment"
+            aria-label="Fulfillment"
+            value={filters.fulfillment_status}
+            onChange={(value) => setFilters((f) => ({ ...f, fulfillment_status: value, page: 1 }))}
+            options={FULFILLMENT_FILTERS}
+            style={{ width: 170 }}
+          />
+        </div>
       </div>
 
       <Card className="ao-table-card" styles={{ body: { padding: 0 } }}>
@@ -745,7 +1037,20 @@ const AccessOrders = () => {
           rowKey={(record) => record.id}
           dataSource={orders}
           loading={loading}
-          pagination={{ pageSize: 10 }}
+          locale={{
+            emptyText:
+              filters.search || filters.payment_status || filters.fulfillment_status
+                ? "No orders match these filters"
+                : "No orders yet",
+          }}
+          pagination={{
+            current: filters.page,
+            pageSize,
+            total,
+            showSizeChanger: false,
+            showTotal: (count) => `${count.toLocaleString("en-US")} order${count === 1 ? "" : "s"}`,
+            onChange: (page) => setFilters((f) => ({ ...f, page })),
+          }}
         />
       </Card>
 
@@ -771,13 +1076,31 @@ const AccessOrders = () => {
                   {formatVegasFull(selectedOrder.created_at)}
                 </p>
               </div>
-              <Pill
-                text={selectedOrder.payment_status?.toUpperCase()}
-                type={selectedOrder.payment_status}
-              />
+              {isCancelled(selectedOrder) ? (
+                <Pill text="CANCELLED" type="cancelled" />
+              ) : (
+                <Pill
+                  text={paymentWords(selectedOrder.payment_status)}
+                  type={selectedOrder.payment_status}
+                />
+              )}
             </div>
 
             <div className="ao-modal-body">
+              {isCancelled(selectedOrder) && (
+                <Alert
+                  className="ao-cancelled-alert"
+                  type="error"
+                  showIcon
+                  title="This order is cancelled"
+                  description={
+                    (selectedOrder.cancelled_at ? `Cancelled ${formatVegasFull(selectedOrder.cancelled_at)}. ` : "") +
+                    "Nothing more ships for it, and any Access Pro bought with it has ended. No refund was made here: a keychain is refunded manually in Stripe; subscriptions are not refunded." +
+                    (selectedOrder.cancel_reason ? ` Reason: ${selectedOrder.cancel_reason}` : "")
+                  }
+                />
+              )}
+              <MoneyEvents order={selectedOrder} />
               <div className="ao-info-grid">
                 <div className="ao-info-item">
                   <div className="label">Customer</div>
@@ -812,6 +1135,8 @@ const AccessOrders = () => {
                 </div>
               </Tooltip>
 
+              {selectedOrder.checkout && <CheckoutSummary checkout={selectedOrder.checkout} />}
+
               {isPhysical(selectedOrder) ? (
                 <>
                   <div className="ao-section-label">
@@ -837,48 +1162,48 @@ const AccessOrders = () => {
                     onVoid={() => voidLabel(selectedOrder)}
                   />
 
-                  <div className="ao-section-label">Fulfillment</div>
-                  <p className="ao-label-note ao-fulfillment-note">
-                    Buying a label fills in the tracking number and link, and Shippo's tracking moves the status to
-                    shipped and delivered. Change them here for a parcel sent another way.
-                  </p>
+                  {/* A cancelled order's fulfillment isn't changed by hand. */}
+                  {!isCancelled(selectedOrder) && (
+                    <>
+                      <div className="ao-section-label">Fulfillment</div>
+                      <p className="ao-label-note ao-fulfillment-note">
+                        Buying a label fills in the tracking number and link, and Shippo's tracking moves the status
+                        to shipped and delivered. Change them here for a parcel sent another way.
+                      </p>
 
-                  <div style={{ marginBottom: 14 }}>
-                    <div className="ao-info-item" style={{ marginBottom: 12 }}>
-                      <div className="label">Status</div>
-                      <Select
-                        value={editStatus}
-                        style={{ width: "100%", marginTop: 4 }}
-                        onChange={setEditStatus}
-                        options={[
-                          { value: "pending", label: "Pending" },
-                          { value: "processing", label: "Processing" },
-                          { value: "shipped", label: "Shipped" },
-                          { value: "delivered", label: "Delivered" },
-                        ]}
-                      />
-                    </div>
+                      <div style={{ marginBottom: 14 }}>
+                        <div className="ao-info-item" style={{ marginBottom: 12 }}>
+                          <div className="label">Status</div>
+                          <Select
+                            value={editStatus}
+                            style={{ width: "100%", marginTop: 4 }}
+                            onChange={setEditStatus}
+                            options={FULFILLMENT_OPTIONS}
+                          />
+                        </div>
 
-                    <div className="ao-info-item" style={{ marginBottom: 12 }}>
-                      <div className="label">Tracking Number</div>
-                      <Input
-                        value={editTracking}
-                        onChange={(e) => setEditTracking(e.target.value)}
-                        placeholder="e.g. 1Z999AA10123456784"
-                        style={{ width: "100%", marginTop: 4 }}
-                      />
-                    </div>
+                        <div className="ao-info-item" style={{ marginBottom: 12 }}>
+                          <div className="label">Tracking Number</div>
+                          <Input
+                            value={editTracking}
+                            onChange={(e) => setEditTracking(e.target.value)}
+                            placeholder="e.g. 1Z999AA10123456784"
+                            style={{ width: "100%", marginTop: 4 }}
+                          />
+                        </div>
 
-                    <div className="ao-info-item">
-                      <div className="label">Tracking Link (optional)</div>
-                      <Input
-                        value={editTrackingLink}
-                        onChange={(e) => setEditTrackingLink(e.target.value)}
-                        placeholder="https://carrier.com/track/..."
-                        style={{ width: "100%", marginTop: 4 }}
-                      />
-                    </div>
-                  </div>
+                        <div className="ao-info-item">
+                          <div className="label">Tracking Link (optional)</div>
+                          <Input
+                            value={editTrackingLink}
+                            onChange={(e) => setEditTrackingLink(e.target.value)}
+                            placeholder="https://carrier.com/track/..."
+                            style={{ width: "100%", marginTop: 4 }}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </>
               ) : (
                 <div className="ao-box" style={{ textAlign: "center", color: "var(--color-text-tertiary)" }}>
@@ -886,13 +1211,22 @@ const AccessOrders = () => {
                 </div>
               )}
 
-              <div style={{ textAlign: "right" }}>
-                <Button
-                  className="ao-save-btn"
-                  loading={savingOrder}
-                  disabled={!isPhysical(selectedOrder)}
-                  onClick={handleSaveOrderDetails}>Save Changes</Button>
-              </div>
+              {!isCancelled(selectedOrder) && (
+                <div className="ao-modal-actions">
+                  <Button
+                    danger
+                    icon={<CloseCircleOutlined />}
+                    onClick={() => setCancellingOrder(selectedOrder)}
+                  >
+                    Cancel order
+                  </Button>
+                  <Button
+                    className="ao-save-btn"
+                    loading={savingOrder}
+                    disabled={!isPhysical(selectedOrder)}
+                    onClick={handleSaveOrderDetails}>Save Changes</Button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -910,6 +1244,19 @@ const AccessOrders = () => {
             setBuyingLabelFor(null);
             reloadOrder(buyingLabelFor.id);
           }}
+        />
+      )}
+
+      {cancellingOrder && (
+        <CancelOrderModal
+          order={cancellingOrder}
+          onClose={() => setCancellingOrder(null)}
+          onCancelled={(order) => {
+            setCancellingOrder(null);
+            showOrder(order);
+          }}
+          // The refusal stays on screen; the details behind it show the order as it is now.
+          onStale={() => reloadOrder(cancellingOrder.id)}
         />
       )}
     </div>

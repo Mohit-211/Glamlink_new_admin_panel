@@ -59,7 +59,10 @@ const plural = (count: number, word: string) => `${count} ${word}${count === 1 ?
 
 const dash = <span className={styles.muted}>-</span>;
 
-/** The website's directory applications, and the listings admins added. */
+/**
+ * What the website's directory form sent before it was retired (new people join through the Access form), and the
+ * listings admins added. Admins still review the pending ones here.
+ */
 const DirectoryApplications = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -274,7 +277,7 @@ const DirectoryApplications = () => {
     <div>
       <PageHeader
         title="Directory applications"
-        subtitle="From the website's directory form, or added here. Approving one lists the person on the directory and makes their account."
+        subtitle="The website's directory form is retired: new people join through the Access form. These are the applications it sent, and listings added here. Approving one lists the person on the directory and makes their account."
         extra={
           <>
             <Segmented<StatusFilter>

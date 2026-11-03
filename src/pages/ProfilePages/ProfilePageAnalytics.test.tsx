@@ -60,6 +60,25 @@ describe("Page analytics: reading the API's numbers", () => {
     expect(targetText({ event_type: "PRODUCT_CLICK", event_target: "31" })).toBe("Product #31");
     expect(targetText({ event_type: "SOCIAL_CLICK", event_target: "tiktok" })).toBe("TikTok");
   });
+
+  it("names the clicks of the owner's design (Nov 3), and what they were on", () => {
+    const counts = clickCounts({ SHARE_CLICK: 5, MEDIA_CLICK: 4, EDUCATION_CLICK: 3, PODCAST_CLICK: 2, JOURNAL_CLICK: 1 });
+    expect(counts.slice(0, 5).map((c) => [c.label, c.count])).toEqual([
+      ["Shares", 5],
+      ["Media & Images", 4],
+      ["Education", 3],
+      ["The Beauty Vault", 2],
+      ["Journal", 1],
+    ]);
+    // Every kind is listed, at 0 when nothing was clicked.
+    expect(clickCounts({}).map((c) => c.label)).toEqual(
+      expect.arrayContaining(["Shares", "Media & Images", "Education", "The Beauty Vault", "Journal"]),
+    );
+    expect(targetText({ event_type: "MEDIA_CLICK", event_target: "88" })).toBe("Media item #88");
+    expect(targetText({ event_type: "JOURNAL_CLICK", event_target: "31" })).toBe("Article #31");
+    expect(targetText({ event_type: "EDUCATION_CLICK", event_target: "winter-skin" })).toBe("Education post “winter-skin”");
+    expect(targetText({ event_type: "PODCAST_CLICK", event_target: "skin-barrier-101" })).toBe("Episode “skin-barrier-101”");
+  });
 });
 
 const numbers = (fields: Partial<PageAnalytics> = {}): PageAnalytics => ({

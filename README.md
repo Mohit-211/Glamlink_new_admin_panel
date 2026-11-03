@@ -1,8 +1,8 @@
 # Glamlink Admin Panel
 
-Admin panel for the Glamlink website (glamlink.net): professionals and their public pages, Access cards (requests, orders, pricing, subscriptions), the directory and its applications, the journal, magazine, videos and podcast, ads, the home page, and what the website's forms collect.
+Admin panel for the Glamlink website (glamlink.net): professionals, brands and their public pages, Access cards (requests, orders, pricing, subscriptions), the directory, its applications and its listing claims, the journal, magazine, videos and podcast, ads, the home page, and what the website's forms collect.
 
-The website comes first. The mobile app's screens (app users, posts, clips, followers, bookings, services, shop products and orders, referrals and rewards, banners and app FAQs) were removed until the app is rebuilt; they are in git history at `2970239`. What the panel must do for the new API is in the backend's `docs/handoff/admin-panel.md`.
+The website comes first. The mobile app's screens (app users, posts, clips, followers, bookings, services, shop products and orders, referrals and rewards, banners and app FAQs) were removed until the app is rebuilt; they are in git history at `2970239`. What the panel must do for the new API is in the backend's `docs/handoff/admin-panel.md`. Work done against the code audits, open findings and next steps are in `progress.md`.
 
 ## Stack
 
@@ -12,10 +12,10 @@ The website comes first. The mobile app's screens (app users, posts, clips, foll
 | Build & dev server | [Vite](https://vite.dev) |
 | UI components, icons, notifications | [antd](https://ant.design) + `@ant-design/icons` |
 | Routing | [React Router](https://reactrouter.com) v8 (`react-router`) |
-| Rich-text editor | [Tiptap](https://tiptap.dev) — shared `src/components/RichTextEditor.tsx` |
+| Rich-text editor | [Tiptap](https://tiptap.dev) — shared `src/components/RichTextEditor.tsx` (`simple`, `full`, and `article` for profile Education posts) |
 | Charts | Chart.js (`react-chartjs-2`) |
 | Dates | dayjs |
-| Image cropping | `antd-img-crop` (wrapped by `src/components/ImageCropModal.tsx`) |
+| Image cropping | `antd-img-crop` (fixed ratios): wrapped by `src/components/ImageCropModal.tsx` on the card forms and by `src/components/ImageUploadField.tsx` on the newer screens; older pages use it directly. `react-image-crop` for the free crop: `src/components/ImageCropDialog.tsx` (presets, Free, a custom ratio, rotation) on the Journal's cover, author photos and pictures in the text |
 | Tests | [Vitest](https://vitest.dev) + Testing Library (jsdom) |
 | Lint | [oxlint](https://oxc.rs/docs/guide/usage/linter) |
 
@@ -36,8 +36,8 @@ Read at build time from `.env` (see `.env.example`). Only variables prefixed wit
 | Variable | Used for |
 | --- | --- |
 | `VITE_API_BASE_URL` | Backend API base URL (ends with `/`); production: `https://api.glamlink.net/api/v1/` |
-| `VITE_IMAGE_BASE_URL` | Base URL for uploaded images; production: `https://api.glamlink.net/images/` |
-| `VITE_VIDEO_BASE_URL` | Base URL for uploaded videos; production: `https://api.glamlink.net/videos/` |
+| `VITE_IMAGE_BASE_URL` | Base URL for uploaded images, read only by two older screens (View Professional, Applicant Form) to turn file names into links; the new API returns full URLs. Production: `https://api.glamlink.net/images/` |
+| `VITE_VIDEO_BASE_URL` | Not read by any screen (only `src/services/Host.ts` re-exports it, and nothing imports that). `src/config/env.ts` still requires it, so keep it set until it is removed. Production: `https://api.glamlink.net/videos/` |
 | `VITE_GOOGLE_MAPS_API_KEY` | Google Maps address search and geocoding on the access card forms; the script loads on first use (`src/utils/googleMaps.ts`) |
 | `VITE_WEBSITE_URL` | Optional. The public website, for "view on site" links (`src/utils/website.ts`); defaults to `https://glamlink.net` |
 
@@ -59,27 +59,33 @@ Every request carries the admin token through one shared client (`src/utils/sess
 
 The ad video cropper uses the browser's own encoder (WebCodecs, through Mediabunny), so admins need a current Chrome, Edge, Safari or Firefox to crop videos.
 
+The live panel is admin.glamlink.net. This repo holds no CI or hosting config; the deploy scripts that `vite.config.ts` mentions live outside it.
+
 ## Project layout
 
 ```
 index.html                Vite entry (loads src/index.tsx)
 src/
   App.tsx                 Routes
-  components/             Shared components: layout, rich-text editor, image cropper, and for the newer screens
+  components/             Shared components: layout, rich-text editor, image cropper, SafeHtml (stored HTML
+                          through DOMPurify), DeleteConfirmButton, and for the newer screens
                           PageHeader/Panel, AccountSelect (pick professional and brand accounts),
                           ImageUploadField (upload an image, keep its link), DateRangeFilter
   config/                 Environment, dayjs and the antd theme (built from index.css)
   index.css               The only global stylesheet; every colour token lives here
-  pages/                  One folder per admin section
+  pages/                  One folder per admin section; BusinessCard/cardType.ts holds a card's type
+                          (Professional or Brand: labels, tag colours, options) for the card screens
   services/Api/           API calls, one module per backend area, typed with the models in types/
   types/                  API response shapes and domain models (users, journals, access cards, …)
   utils/                  Shared helpers: API error readers, showFieldError (a refusal's details.field on its
-                          form field), table state, :id route param, CSV export, website links
+                          form field), table state, :id route param, CSV export, website links, badges (a
+                          screen asks the sidebar to recount its badges); also one component,
+                          LocationAutocomplete.tsx (Google Places address search)
   setupTests.ts           Vitest setup (jest-dom matchers, jsdom shims)
   vite-env.d.ts           Types for the VITE_* environment variables
 ```
 
-Tests live next to the code they cover (`*.test.ts` / `*.test.tsx`).
+Tests live next to the code they cover (`*.test.ts` / `*.test.tsx`). The newer screens and the shared helpers have tests; most older screens have none yet (see `progress.md`).
 
 ## Colours
 

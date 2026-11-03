@@ -20,7 +20,6 @@ const answers: Record<string, unknown> = {
   "businessCard/getAllBusinessCards": [{ status: "pending" }, { status: "pending" }, { status: "accepted" }],
   "form/getPendingFormCount": "4",
   "directory/applications": { count: 3, rows: [] },
-  "businessCard/access-orders": { data: [{ fulfillment_status: "pending" }, { fulfillment_status: "shipped" }, { fulfillment_status: null }] },
   "admin/users/list/7": { count: 87, rows: [] },
   "profiles/admin/list": { count: 64, rows: [] },
   "access/admin/subscriptions": [{ user_id: 1, status: "active" }, { user_id: 2, status: "active" }],
@@ -29,12 +28,21 @@ const answers: Record<string, unknown> = {
   "search/admin/terms": [{ term: "botox", searches: 40, last_results: 3, last_searched_at: "2026-10-27" }],
 };
 
+// The orders list counts what matches its filters: paid orders by fulfillment status. Any other question counts 99,
+// so a count that doesn't ask for paid orders shows wrong.
+const paidOrders: Record<string, number> = { pending: 2, processing: 1, shipped: 5, cancelled: 4 };
+
 const tile = (title: string) => screen.getByText(title).closest(".ant-card") as HTMLElement;
 
 describe("Dashboard", () => {
   it("shows each number with its screen, and a dash for one that can't load", async () => {
-    vi.mocked(axios.get).mockImplementation(async (url) => {
+    vi.mocked(axios.get).mockImplementation(async (url, config) => {
       const path = String(url).replace(API, "");
+      if (path === "businessCard/access-orders") {
+        const { payment_status, fulfillment_status } = (config as { params: Record<string, string> }).params;
+        const total = payment_status === "paid" ? (paidOrders[fulfillment_status] ?? 99) : 99;
+        return { data: { data: { data: [], pagination: { total, page: 1, limit: 1 } } } };
+      }
       if (path in answers) return { data: { data: answers[path] } };
       throw new Error(`No answer for ${path}`);
     });
@@ -51,8 +59,8 @@ describe("Dashboard", () => {
     expect(await within(tile("Live Access cards")).findByText("1")).toBeInTheDocument();
     expect(await within(tile("Applicant forms to review")).findByText("4")).toBeInTheDocument();
     expect(await within(tile("Directory applications to review")).findByText("3")).toBeInTheDocument();
-    // Only pending or processing orders wait to ship; one with no fulfillment is Access Pro alone.
-    expect(await within(tile("Keychain orders to ship")).findByText("1")).toBeInTheDocument();
+    // Paid orders pending or processing wait to ship, as the API counts them; shipped and cancelled ones don't.
+    expect(await within(tile("Keychain orders to ship")).findByText("3")).toBeInTheDocument();
     expect(await within(tile("Access Pro subscribers")).findByText("2")).toBeInTheDocument();
     expect(await within(tile("Newsletter subscribers")).findByText("1,203")).toBeInTheDocument();
     expect(await within(tile("Partner inquiries")).findByText("–")).toBeInTheDocument();

@@ -270,7 +270,7 @@ const AnalyticsScreen = ({ userId }: { userId: string }) => {
           <div className={styles.panelBody}>
             <div className={styles.panelHead}>
               <h4 className={styles.panelTitle}>Most clicked</h4>
-              <span className={styles.muted}>The 10 links and products clicked most</span>
+              <span className={styles.muted}>The 10 links, products, posts and episodes clicked most</span>
             </div>
             <Table<Target>
               rowKey={(t) => `${t.event_type}:${t.event_target}`}
@@ -278,7 +278,7 @@ const AnalyticsScreen = ({ userId }: { userId: string }) => {
               columns={targetColumns}
               dataSource={data?.top_targets ?? []}
               pagination={false}
-              locale={{ emptyText: "No clicks on links or products in these dates" }}
+              locale={{ emptyText: "No clicks on links, products, posts or episodes in these dates" }}
             />
           </div>
         </Panel>

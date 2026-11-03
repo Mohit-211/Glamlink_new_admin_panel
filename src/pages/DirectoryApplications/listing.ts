@@ -7,8 +7,8 @@ import type {
   ListingPhotoChanges,
 } from "../../types/directoryApplication";
 
-// What the directory application screens share: reading the JSON fields (kept as the website's form sent them, so any
-// item may be malformed), the words for statuses and location types, and the listing form's values.
+// What the directory application screens share: reading the JSON fields (kept as the website's form, now retired, sent
+// them, so any item may be malformed), the words for statuses and location types, and the listing form's values.
 
 export const LIST_PATH = "/directory-applications";
 export const viewPath = (id: number | string) => `${LIST_PATH}/${id}`;

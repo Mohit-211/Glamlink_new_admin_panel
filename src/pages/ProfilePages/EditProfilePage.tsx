@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
-import { Alert, Button, Empty, Form, Space, Spin, Tag, message } from "antd";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
+import { Alert, Button, Empty, Form, Space, Spin, Tabs, Tag, message } from "antd";
 import { BarChartOutlined, ExportOutlined } from "@ant-design/icons";
 import PageHeader, { Panel } from "../../components/PageHeader";
 import { GetPage, UpdatePage } from "../../services/Api/ProfilesApi";
@@ -8,7 +8,10 @@ import { apiErrorCode, apiErrorMessage, apiErrorStatus } from "../../utils/apiEr
 import { showFieldError } from "../../utils/formErrors";
 import type { PageView } from "../../types/profile";
 import ClaimEmailButton from "./ClaimEmailButton";
+import EducationTab from "./EducationTab";
+import MediaTab from "./MediaTab";
 import PageFields from "./PageFields";
+import TaggedTab from "./TaggedTab";
 import { fallbacksOf, toFormValues, toPageUpdate, type PageFormValues } from "./pageForm";
 import {
   TYPE_COLOR,
@@ -71,9 +74,18 @@ const PageStatus = ({ view }: { view: PageView }) => {
   );
 };
 
+const TABS = ["page", "media", "education", "tagged"] as const;
+type TabKey = (typeof TABS)[number];
+
+const asTab = (value: string | null): TabKey => TABS.find((tab) => tab === value) ?? "page";
+
 const PageScreen = ({ userId }: { userId: string }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const routeState = usePageRouteState();
+  // `?tab=` opens a tab (and keeps it on reload).
+  const [params, setParams] = useSearchParams();
+  const tab = asTab(params.get("tab"));
   const [form] = Form.useForm<PageFormValues>();
   const [view, setView] = useState<PageView | null>(null);
   const [problem, setProblem] = useState<"not_found" | "failed" | null>(() =>
@@ -193,32 +205,61 @@ const PageScreen = ({ userId }: { userId: string }) => {
       <PageStatus view={view} />
 
       <Panel>
-        <Form<PageFormValues>
-          form={form}
-          layout="vertical"
-          initialValues={toFormValues(view)}
-          onFinish={save}
-          scrollToFirstError
-          className={styles.form}
-        >
-          <PageFields fallbacks={fallbacksOf(view)} savedSlug={view.slug ?? ""} />
-          <div className={styles.formActions}>
-            <Button type="primary" htmlType="submit" loading={saving}>
-              Save page
-            </Button>
-            <Button onClick={() => form.resetFields()} disabled={saving}>
-              Undo changes
-            </Button>
-          </div>
-        </Form>
+        <Tabs
+          activeKey={tab}
+          // The route's state (where "back" goes, whether the page was just made) stays with the new address.
+          onChange={(key) => setParams({ tab: key }, { replace: true, state: location.state })}
+          items={[
+            {
+              key: "page",
+              label: "Page",
+              children: (
+                <Form<PageFormValues>
+                  form={form}
+                  layout="vertical"
+                  initialValues={toFormValues(view)}
+                  onFinish={save}
+                  scrollToFirstError
+                  className={styles.form}
+                >
+                  <PageFields fallbacks={fallbacksOf(view)} savedSlug={view.slug ?? ""} type={shown.type} />
+                  <div className={styles.formActions}>
+                    <Button type="primary" htmlType="submit" loading={saving}>
+                      Save page
+                    </Button>
+                    <Button onClick={() => form.resetFields()} disabled={saving}>
+                      Undo changes
+                    </Button>
+                  </div>
+                </Form>
+              ),
+            },
+            {
+              key: "media",
+              label: "Media & Images",
+              children: <MediaTab userId={view.user_id} hasCard={Boolean(shown.access_card)} />,
+            },
+            {
+              key: "education",
+              label: "Education",
+              children: <EducationTab userId={view.user_id} page={{ slug: view.slug, visible: view.visible }} />,
+            },
+            {
+              key: "tagged",
+              label: "Tagged in",
+              children: <TaggedTab slug={view.slug} visible={view.visible} />,
+            },
+          ]}
+        />
       </Panel>
     </div>
   );
 };
 
 /**
- * One page's screen (route /pages/:userId): how it stands, and the fields an admin sets on it. Another account's id
- * starts a fresh screen, so no form value carries over.
+ * One page's screen (route /pages/:userId, `?tab=` page, media, education or tagged): how it stands, the fields an
+ * admin sets on it, its Media & Images and Education, and where it is tagged. Another account's id starts a fresh
+ * screen, so no form value carries over.
  */
 const EditProfilePage = () => {
   const { userId = "" } = useParams();

@@ -103,7 +103,7 @@ const NewBrandPage = () => {
             />
           )}
 
-          <PageFields fallbacks={null} savedSlug="" creating />
+          <PageFields fallbacks={null} savedSlug="" type="brand" creating />
 
           <div className={styles.formActions}>
             <Button type="primary" htmlType="submit" loading={saving}>

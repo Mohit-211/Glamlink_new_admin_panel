@@ -1,36 +1,78 @@
 # Audit progress
 
-Tracks the work done against the code and dependency audit of the admin panel ([full audit](https://claude.ai/code/artifact/e5486df6-a77d-4fd4-abc6-0030334b5224)). The audit was taken at commit `4ebfc15` on `main`.
+Tracks the work done against the code and dependency audit of the admin panel, taken at commit `4ebfc15` on `main` on Oct 15. The [audit doc](https://claude.ai/code/artifact/e5486df6-a77d-4fd4-abc6-0030334b5224) now holds the Oct 30 re-audit of `d681084` (see [Oct 30 audit](#oct-30-audit)); the Oct 15 version is in its history.
 
-- **Branch:** `main`. Pass 10 is `b75b38b`, followed by `ed32708`, which only changes line endings to LF; passes 1–9 end at `2970239`.
-- **Status as of:** 2026-10-28.
-- **Backend questions:** security items that need a server change or answer are collected in [Admin panel security: backend changes and questions](https://claude.ai/code/artifact/7cf1fb80-6241-4282-b8a6-9966c6290ed9). The panel side of those items waits for its answers.
+- **Branch:** `main`. Pass 10 is `b75b38b`, followed by `ed32708`, which only changes line endings to LF; passes 1–9 end at `2970239`. `main` is at `d681084` (Oct 28; the last two commits only touch this file). Pass 10 is live on admin.glamlink.net (built Oct 27), on the new API. Passes 11 (Nov 1–2) and 12 (Nov 3) are on `main` (committed Nov 4) and not deployed: they need the backend's Nov 1 and Nov 3 changes, which deploy first (see [pass 11](#11-access-orders-listing-claims-and-card-types-nov-12) and [pass 12](#12-profile-pages-and-journal-cropping-nov-3)).
+- **Status as of:** 2026-11-03 for passes 11 and 12; the rest as of 2026-10-30.
+- **Backend questions:** the security questions in [Admin panel security: backend changes and questions](https://claude.ai/code/artifact/7cf1fb80-6241-4282-b8a6-9966c6290ed9) were all answered on Oct 16, and the panel made its changes in pass 9. Items 4–7 there still stand; its Oct 30 status note lists them.
 - **Backend requests (pass 10):** [Glamlink Backend Requests — Admin Panel](https://claude.ai/artifact/Qb8i2fdiYQAN6TNMUG86KY): what the backend should change, with a status per row (the findings table in pass 10, kept up to date there).
-- **Not yet done:** a manual pass in a real browser, against the new API. Build, tests and lint pass, and every route renders in the test environment, but nobody has clicked through the app since these changes; the screens of pass 10 have never met a real API.
+- **Not yet done:** a manual pass in a real browser. Pass 10 runs against the new API on admin.glamlink.net, but there is no record of anyone clicking through it. The Oct 30 audit found P0 and P1 bugs that such a pass would likely hit, so do it after those fixes (see [Oct 30 audit](#oct-30-audit)).
 
 ## At a glance
 
 | Measure | At audit (`4ebfc15`) | Now |
 | --- | --- | --- |
-| Clean `npm ci` | Fails (ERESOLVE) | Passes, 283 packages |
+| Clean `npm ci` | Fails (ERESOLVE) | Passes |
 | `npm audit` | 143 advisories (4 critical, 45 high) | 0 |
-| Packages in lockfile | 1,739 | 363 |
-| Direct dependencies | 41 (no dev dependencies) | 28 + 14 dev |
-| Production JS | 6.2 MB (1.62 MB gzipped), one file | 2.91 MB (891 KB gzipped), still one file |
+| Packages in lockfile | 1,739 | 362 (the count `npm audit` checks) |
+| Direct dependencies | 41 (no dev dependencies) | 27 + 14 dev (`react-image-crop` added Nov 3); 2 unused (`papaparse`, `@types/papaparse`) |
+| Production JS | 6.2 MB (1.62 MB gzipped), one file | 2.99 MB (914 KB gzipped) in the main file (2.91 MB, 891 KB on Oct 30) |
 | UI kits / icon sets | 5 / 5 | 1 / 1 (antd, `@ant-design/icons`) |
-| Jobs done by two or more libraries | 10 | 0 |
+| Jobs done by two or more libraries | 10 | 1 since Nov 3: image cropping (`antd-img-crop` on most screens; `react-image-crop` for the Journal's free crop, which `antd-img-crop` can't do) |
 | Routes unreachable from the UI | 29 | 0 (deleted) |
-| `console.*` calls | 320 (including credential logging) | 222 in the source, all `console.error` / `console.warn`; none in production builds |
-| Tests | None | 153 in 32 files (Vitest) |
+| `console.*` calls | 320 (including credential logging) | 111 in the source, all `console.error`; none in production builds |
+| Tests | None | 245 in 44 files (Vitest; 170 in 36 before pass 12, 153 in 32 before pass 11) |
 | Lint | ESLint (CRA): 51 hook-dependency and 14 anchor warnings | oxlint: 0 errors; 16 warnings (14 hook deps, 1 anchor, 1 missing key), all in older files |
 | Colour literals outside the global stylesheet | 876 in 71 files (266 distinct values) | 0, enforced by a test; card-data swatches excepted |
 | Language | JavaScript | TypeScript, `strict` mode, 0 type errors; the build fails on a type error |
 
-Against the audit's "Fix first" list, 4 of 5 items are done; the fifth (a new, restricted Maps key for the panel) is partly done. Of the 23 confirmed bugs, 10 are fixed, 2 are partly fixed and 11 are open. The bug list was intentionally left for a later pass; the ones fixed went away as a side effect of other work: the TypeScript migration (see [Found during the TypeScript migration](#found-during-the-typescript-migration)) and the security pass (session handling).
+Against the audit's "Fix first" list, 4 of 5 items are done; the fifth (a new, restricted Maps key for the panel) is partly done. Of the 23 confirmed bugs, 12 are fixed, 9 went with removed screens, 1 is partly fixed (a missing key) and 1 is open (the Specialities page bug). The bug list was intentionally left for a later pass; the ones fixed went away as a side effect of other work: the TypeScript migration (see [Found during the TypeScript migration](#found-during-the-typescript-migration)), the security pass (session handling) and pass 10.
+
+## Oct 30 audit
+
+A fresh, read-only audit of `main` at `d681084`, with an API contract check against the backend (`master` `aadb56a`). It is now in the [audit doc](https://claude.ai/code/artifact/e5486df6-a77d-4fd4-abc6-0030334b5224). It found 143 issues: 1 P0, 11 P1, 59 P2 and 72 P3; the contract check adds 2 P0s that break admin screens.
+
+The newer screens (pass 10) are solid. Every P0 and P1 sits in the older, migrated screens: card create and edit, articles, Education, Events and Shop, Ads, Directory Sections and User Login Activity. Checks on `d681084`: 0 type errors, oxlint 0 errors and 16 warnings, 153 tests in 32 files pass, `npm audit` 0, one 2.91 MB (891 KB gzipped) bundle.
+
+**Fix first** (S is under half a day, M is half a day to 2 days):
+
+| ID | Sev | What | Effort |
+| --- | --- | --- | --- |
+| A-CNT-1 | P0 | Backend: saving an article that has topics answers 500 and soft-deletes its topic links; live, all 6 topics list 0 articles. Hard-delete the links in one transaction, then repair the data. | S |
+| X-01 | P0 | Links from the public partner form and from guest card drafts open with `window.open` (`PartnerInquiries.tsx:104`, `ViewPartnerInquiry.tsx:131`, `BusinessCard.tsx:952-995`); a `javascript:` link can read the token in `localStorage`. Allow only http(s) links; the backend checks URLs on public forms. | S |
+| A-OTH-1 | P0 | Expanding a user in User Login Activity blanks the panel: new logins store no IP, and `LoginLogs.tsx:65` calls `.split` on null. Null-safe cell; the backend saves the IP. | S |
+| A-01 | P1 | Create card: the Link dialog's inputs overwrite the bio with the URL or `"on"` | S |
+| A-02 | P1 | Edit card: a card whose saved video has no thumbnail can never be saved | S/M |
+| J-01 | P1 | Dragging rows while a search is active saves a partial order and hides the other rows (Journals, Education, Events, Shop) | S |
+| J-02 | P1 | Edit article wipes its topics and FAQs when any of 8 lookups fails or is slow | S |
+| J-03, W-01 | P1 | The strings `"undefined"` and `"null"` are saved and shown on the website (event location, education category, directory section description) | S |
+| J-04 | P1 | No submitting state on the Discover forms, Authors and Categories: double clicks create duplicates, and an Add Shop retry creates a second product | S |
+| M-01 | P1 | Ad start and end times drift by the admin's UTC offset on every save | S |
+| M-02 | P1 | Video ads are stored at half the slot size, and the website draws them at that size | S |
+| M-03 | P1 | The `journal-listing-in-feed-2` ad slot can't be used at all | S/M |
+| A-03 | P1 | Access Orders reaches only the newest 10 orders (the backend reads paging from `req.body`). **Nov 2:** the backend reads the query string (A-ACC-1, built Nov 1, not deployed) and pass 11 pages on the server; closes when both ship | M (backend) |
+
+Add a regression test with each fix: 14 page areas have no tests, and every P1 flow is among them (card create and edit, article add and edit, the Discover forms, ads, podcasts; T-01).
+
+**Then:**
+
+1. **Platform safety net (M):** an error boundary (X-03; a dozen render-time throws blank the whole panel), keep the page after sign-in (X-05), a re-sign-in that doesn't unmount the page (X-06), a 404 route (X-04), a global 403 handler (X-08).
+2. **Backend requests** that unblock panel fixes: access-orders paging from the query (A-03; built Nov 1, not deployed), name and email on subscription seats (A-25), `topic_ids` on product and podcast saves (J-13), one endpoint for an article's paragraph tags (J-07), raw Publuu fields in the magazine admin view (M-08), URL validation on public forms (X-01), `ip_address` on login records (A-OTH-1). From the contract check: product and podcast saves fail after a topic is deleted (A-CNT-4), and CSV import is refused for `application/vnd.ms-excel` and times out on large files (A-CNT-5, A-CNT-6).
+3. **Browser QA** against the live panel, after the fixes above. Priorities:
+   - the new screens, with real data: pricing and subscriptions (Stripe test keys), buying and voiding a label (Shippo test keys), approving a directory application, importing a YouTube link;
+   - visual changes from antd 6;
+   - video previews, the rich-text editor on the journal pages, image cropping.
+4. **Consolidate the older screens (L):** shared `SortableTable`, `CoverImageField`, `DiscoverList`/`DiscoverForm`, one card form, one article form; route-level lazy loading (X-09); one date helper (X-10).
+5. **Retire or rethink** (owner decisions): Applicant Form (W-07, a CRM-era gate nothing submits to), User Login Activity (S-01 to S-03), the duplicate YouTube import on Podcast Schedule (M-07).
+6. **Hygiene (S):**
+   - delete the untracked report files (R-01): `migration-report/`, `src/migration-report/`, `src/audit-report.sh` and `src/audit-report.txt`, JS-era reports about code that no longer exists;
+   - remove `papaparse` and `@types/papaparse` (R-02), `src/types/dashboard.ts` (R-03) and the unused `VITE_VIDEO_BASE_URL` (R-04);
+   - fix the misspelled names (R-08);
+   - keep this file current.
 
 ## Work done
 
-Nine passes, in order. Each pass was verified with a production build before the next one started.
+Eleven passes, in order. Each pass was verified with a production build before the next one started.
 
 ### 1. One job, one library
 
@@ -158,15 +200,15 @@ Frontend-only fixes from the audit's security list. Anything that needs a backen
   - **The editor sanitizes too:** initial content, content loaded later, the HTML source view, and paste/drop. Its iframe node also refuses non-https sources. Journal bodies can be created through endpoints that take no token, so an admin opening one in the editor was an XSS path.
 - **CSV exports (Users, Products) are escaped.** Cells starting with `=`, `+`, `-` or `@` get a leading apostrophe, so a seller or user name can't run as a spreadsheet formula. Phone numbers and plain numbers are left alone. Names with commas or quotes no longer break the row, and `#` no longer cuts the file short. Shared helper: `src/utils/csv.ts`.
 - **One place owns the session: `src/utils/session.ts`.**
-  - `getToken`, `setToken`, `clearSession` and a `useSessionToken()` hook. MainLayout re-renders from it, so signing out (here or in another tab) shows the login form at once. Pages still read `localStorage.getItem("adminToken")` directly; only saving and clearing moved.
+  - `getToken`, `setToken`, `clearSession` and a `useSessionToken()` hook. MainLayout re-renders from it, so signing out (here or in another tab) shows the login form at once. Pages still read `localStorage.getItem("adminToken")` directly; only saving and clearing moved. (Superseded in pass 9: no page reads it any more.)
   - **A global axios response handler ends the session** when a request that carried the current token gets a `jsonwebtoken` error back (`jwt expired`, `invalid signature`, `jwt malformed`, `invalid token`). It clears the token and shows "Your session has expired" once. Before, an expired session went to the login page but kept the token. The handler ignores requests sent with an older token or none.
-  - **401 does not log out yet.** 13 save handlers read 401 as "expired" (they now call `clearSession()`), but 30 list pages read it as "not allowed for this role". The backend doc asks which is right (section 3).
+  - **401 does not log out yet.** 13 save handlers read 401 as "expired" (they now call `clearSession()`), but 30 list pages read it as "not allowed for this role". The backend doc asks which is right (section 3). (Superseded in pass 9: a 401 now always ends the session.)
   - The local "jwt expired" branches in 7 list pages are removed; they would have shown the message twice.
 - **MainLayout** loads the profile and badge counts only when signed in, and again after signing in inside the layout (before, the header name stayed empty until a reload). The badge counts now send the token.
 - **Login** refuses a response without a token instead of saving the string "undefined", and shows an error for failures it doesn't recognise (before, they showed nothing). Tokens saved as "undefined" or "null" by older builds count as signed out.
 - **Podcast schedules:** "get by id" and "delete" now send the token (they sent `Bearer undefined`).
 - **Search engines:** `index.html` carries `<meta name="robots" content="noindex, nofollow">`. `public/robots.txt` keeps crawling allowed on purpose, with a comment saying why: search engines only honour `noindex` on pages they may fetch, and `Disallow: /` would let a linked URL be listed without its content. The backend doc also asks the host for an `X-Robots-Tag` header.
-- **The ffmpeg core ships with the build** instead of loading from unpkg at run time. `@ffmpeg/core` 0.12.10 is a dependency now (the code had pinned 0.12.6 on the CDN), so `package-lock.json` pins its integrity hash, and the ad video cropper loads it through Vite `?url` imports. Checked in headless Chrome against both the dev server and a production build: the core loaded, cropped and encoded a test clip, and no request left the site. The build now contains a 32 MB `ffmpeg-core-*.wasm`, still downloaded only on the first crop; the README warns that some hosts cap file size (Cloudflare Pages: 25 MiB).
+- **The ffmpeg core ships with the build** instead of loading from unpkg at run time. `@ffmpeg/core` 0.12.10 is a dependency now (the code had pinned 0.12.6 on the CDN), so `package-lock.json` pins its integrity hash, and the ad video cropper loads it through Vite `?url` imports. Checked in headless Chrome against both the dev server and a production build: the core loaded, cropped and encoded a test clip, and no request left the site. The build now contains a 32 MB `ffmpeg-core-*.wasm`, still downloaded only on the first crop; the README warns that some hosts cap file size (Cloudflare Pages: 25 MiB). (Superseded in pass 9: Mediabunny replaced ffmpeg, and the core is gone.)
 - **Google Maps loads on first use** (`src/utils/googleMaps.ts`) instead of from a synchronous script tag on every page. Only the access card forms use it (address autocomplete, city geocoding), so the login page and the rest of the panel no longer run a Google script or expose the key. It uses Google's async loading (`loading=async` + `importLibrary`), which also silences Google's console warning about synchronous loading. Checked in headless Chrome: one script tag however many fields ask, `places.Autocomplete` and `Geocoder` available, and the login page requests nothing from Google except Fonts.
 - **The image-compression worker loads its library from our build.** browser-image-compression runs in a web worker that, by default, loads the library from the jsdelivr CDN with `importScripts()`. The audit missed this one. `ImageCropModal` now passes `libURL`, pointing at the copy Vite emits (`assets/browser-image-compression-*.js`). Checked in headless Chrome against a production build served by a logging server: a 3000×2000 photo came back at 2000×1333 and the worker fetched our copy. The library's CDN default is still in the bundle as a string, but it is used only when `libURL` is missing.
 - **Production builds drop every `console.*` call** (`vite.config.ts`: Rolldown's `compress.dropConsole`). Error logs print whole axios errors, request headers and the admin token included, and anyone shown the console or sent a screenshot could copy them. Dev and tests keep the logs. Production loses them too, so add an error reporter (e.g. Sentry) if production errors need to be seen.
@@ -260,6 +302,7 @@ The backend's handoff note (`glamlink-backend/docs/handoff/admin-panel.md`) list
 - **Topics:** "Show on the home page", tile order and square tile image; a Home Page column on the list.
 - **Shop products:** slug, the page's longer description, owner and brand pickers, "Featured on the home page" and its order; a deleted product (or education item, or event) says so instead of failing.
 - **Ads:** views, clicks and click rate on the list for a date range; per-day numbers on an ad's page.
+- **Podcast Schedule:** an "Import" button for the YouTube playlists. It is the same import as on Videos, so it is a duplicate, with drifted messages (Oct 30 audit, M-07).
 - **Professional view:** the app activity card became "On the website" (page shown or why not, address, Access card, listing, topics, links to edit the page and its analytics); an empty profession shows nothing (it used to default to "Esthetician").
 - **Sidebar:** grouped; the current page is highlighted and its group opens; group keys can't clash with routes; badges for applicant forms and directory applications, re-counted on each change of page. "Directory" is now "Directory Sections" (it edits the directory's sections; applications are separate).
 
@@ -271,7 +314,7 @@ The backend's handoff note (`glamlink-backend/docs/handoff/admin-panel.md`) list
 
 | Finding | Effect | Panel today |
 | --- | --- | --- |
-| `GET /businessCard/access-orders` reads `page`, `limit`, `search` and the status filters from `req.body`, which a GET has none of | The panel only ever gets the newest 10 orders | Says "the newest 10 of N"; asks for 200, which works once the API reads the query |
+| `GET /businessCard/access-orders` reads `page`, `limit`, `search` and the status filters from `req.body`, which a GET has none of | The panel only ever gets the newest 10 orders | Says "the newest 10 of N"; asks for 200, which works once the API reads the query. Pass 11: pages on the server; the API reads the query since Nov 1 (not deployed) |
 | The magazine's admin view has no raw `publuu_*` / `flipbook_url` fields, only the built `flipbook` | Saving an issue that has both a link and Publuu ids (or one id) clears what the form can't show | Sends what it shows |
 | `social: []` on a page is stored as "no links", hiding the card's | The website's own owner editor sends `"[]"`, so an owner who clears their links hides the card's | Sends `null` for an empty list |
 | `GET /profiles/admin/:userId` doesn't say whether the account is `claimed` | The page screen can't tell if a claim email is needed | Takes it from the list; a 409 ALREADY_CLAIMED hides the button |
@@ -282,6 +325,36 @@ The backend's handoff note (`glamlink-backend/docs/handoff/admin-panel.md`) list
 | The 14 seeded magazine covers are still on glamlink.net until `npm run magazine:covers` runs; the API refuses a cover not on its host | Sending the cover back unchanged would fail every save | Sends the cover only when it changed |
 
 **Still in use but unmaintained:** browser-image-compression has had no release since March 2023. It does real work: it shrinks photos to at most 2000 px before cropping. Replace it with a small in-house resize helper when convenient.
+
+### 11. Access orders, listing claims and card types (Nov 1–2)
+
+For the backend's Nov 1 changes (its `docs/handoff/admin-panel.md`, the Nov 1 row) and Mohit's decisions of Nov 1. On `main` and not deployed: these screens call the backend's new answers, so the API deploys first.
+
+- **Access Orders:** paging, search and the Payment and Fulfillment filters run on the server (50 a page, the total from `pagination.total`), so every order can be reached (A-03, with the backend's A-ACC-1). **Cancel order** (`POST businessCard/access-orders/:id/cancel`), with a confirmation in the owner's words and an optional reason: no refund, an unshipped keychain stops, the Access Pro bought with it ends at once. A cancelled order shows as such and is locked (no label bought or voided, no fulfillment change). The Dashboard's "Keychain orders to ship" counts paid orders that are pending or processing, from the API's totals.
+- **Cards:** a Type column (Professional or Brand) and a Type filter on the list; a Type select on Create and Edit that sends `professional_type`; brand labels; the title is required for professionals only; notes that locations are optional.
+- **Listing Claims**, a new screen (`/directory-claims`, in the sidebar after Directory Applications, with a badge of the claims to verify): To verify, Verified and All; Verify and Reject, each confirmed; the API's 409 (another card already has the listing) shown on the page; links to the listing on Google Maps and to the card.
+- **Directory Applications:** the texts say the website's form is retired; the screens stay for the applications still pending and for the listings added here.
+- **Shared pieces:** `utils/badges.ts` (a screen asks the sidebar to recount its badges, as Listing Claims does after a review) and `pages/BusinessCard/cardType.ts` (a card's type: labels, tag colours, options); `types/listingClaim.ts` and `services/Api/ListingClaimsApi.ts`.
+- **Checks:** 170 tests in 36 files pass (153 in 32 before; new: the card list, Create card, Edit card, Listing Claims and a cancelled order as the API answers it), 0 type errors, oxlint 0 errors with the 16 older warnings, and `npm run build` passes.
+- **Matched to the backend's code (Nov 2):** an order is cancelled when the API sets `cancelled_at` (its `payment_status` stays `paid`: refunds are made by hand), and the order's details show the cancel reason; the Payment filter's "Cancelled" sends `cancelled=true`, and the filter also offers `partially_refunded` and `disputed`. A repeat cancel answers the order unchanged rather than a 409, which the dialog handles the same way. Changing a card's type here changes its owner's account type too (the backend's Nov 2 change), so a card switched to Brand shows on the website's brand list.
+
+### 12. Profile pages and Journal cropping (Nov 3)
+
+For the backend's Nov 3 changes (its `docs/handoff/admin-panel.md`, the Nov 3 row and section 8.6) and Mohit's requests of Nov 3: admin screens for everything owners now edit on their profile, a read-only view of where a profile is tagged, and cropping on the Journal ("Presets + Manual + skip" for pictures in the text, with a free crop everywhere). On `main` and not deployed: the API deploys first.
+
+- **Profile pages** (`/pages/:userId` is now in tabs, `?tab=page|media|education|tagged`):
+  - **Page:** Intro (300 characters), Category (a brand's 8 categories as "<label> Brand", else a specialty from `GET /profession`), Shipping, an About image; the cover's hint says an empty cover shows the card's cover photo.
+  - **Media & Images:** every item, hidden ones too; Hide and Show; caption and alt text; reorder (drag or arrows, the full order saved); delete; add photos (20 a request), MP4s with a poster made in the browser (`utils/videoPoster.ts`, the website's code), YouTube or Vimeo links, and the Access card's photos. The first 5 visible items are marked as the ones on the page.
+  - **Education:** the posts with drafts, reorder, Publish and Unpublish, delete, View on site; the form takes a video (a link, or an MP4 with a poster) or an article written in the editor's new `article` mode, which keeps only what the API keeps.
+  - **Tagged in:** the Journal articles and The Beauty Vault episodes the profile appears in, read-only, each linking to its edit screen; tags change on the article (an @handle or Featured people) or on the episode (People). The website's lists answer only for a page it shows, and the tab says so.
+  - Page analytics name the new clicks (shares, media, education, the podcast, the Journal).
+- **Journal cropping** (`components/ImageCropDialog.tsx`, with `react-image-crop`): Original, preset ratios, Free (drag any rectangle; arrow keys move it), a custom W:H ratio, and rotation, cut from the full-size picture (at most 4000 px on the long side).
+  - **Pictures in the text:** the Image button, paste and drop open the crop before uploading (Original, 16:9, 4:3, 1:1, 4:5, Free, Custom, or "Use as is", with "Use as is for the rest" for several); a picture already in the text is cropped again with the scissors button.
+  - **Cover:** 16:9 by default (Journal listings show 16:9), Free and Custom too, and "Crop again" from the original.
+  - **Authors:** 1:1 with a round outline, Free and Custom, and "Crop again". The website now shows the author's photo where it showed their initial.
+- **Leftovers of Nov 1–2:** special offers left the Access pricing settings, and analytics no longer says "not built yet" (A-29, part: "Priority placement in search" stays, marked not built); an order's details show its refund (full or partial), dispute and cancellation.
+- **Tests:** a tear-down wait in `setupTests.ts`: React's scheduler could still have a task queued when a file's last test ended, which failed about one run in two with "window is not defined" once the suite grew.
+- **Checks:** 245 tests in 44 files pass (170 in 36 before), three full runs clean; 0 type errors; oxlint 0 errors with the 16 older warnings; `npm run build` passes.
 
 ## Status against the audit
 
@@ -317,7 +390,7 @@ The backend's handoff note (`glamlink-backend/docs/handoff/admin-panel.md`) list
 | --- | --- | --- |
 | `npm ci` fails | **Done** | |
 | Create React App deprecated | **Done** | Vite 8 |
-| One 6.2 MB bundle, no route-level splitting | **Partly** | 2.87 MB / 855 KB gzipped now; still one file. Both editors' CDN scripts are gone; ffmpeg is replaced by a 137 KB (gzipped) chunk loaded only when cropping. Next step: `React.lazy` per route. |
+| One 6.2 MB bundle, no route-level splitting | **Partly** | 2.91 MB / 891 KB gzipped now; still one file. Both editors' CDN scripts are gone; ffmpeg is replaced by a 137 KB (gzipped) chunk loaded only when cropping. Next step: `React.lazy` per route. |
 | CKEditor is 21% of the bundle | **Done** | Removed |
 
 ### package.json review
@@ -378,7 +451,7 @@ The version mismatches and duplicate copies are gone: Bootstrap CSS/JS is remove
 | `AddAdmin` | "Select Role" option could submit `role_id = NaN` | **Done** (now an antd Select with a placeholder) |
 | 7 files | antd props passed to PrimeReact buttons | **Done** (PrimeReact removed) |
 | `AdminUser.tsx` | `<div s>` typo | **Done** |
-| Missing React keys (6 places) | | **Partly**: `CreateBusinessCard.tsx:1193` remains; the rest went with deleted pages and modals |
+| Missing React keys (6 places) | | **Partly**: `CreateBusinessCard.tsx:1225` remains; the rest went with deleted pages and modals |
 | `AppointmentsApi.ts`, `ClipsApi.ts`, `PostApi.ts` | `timezone: "Asia/Kolkata"` hard-coded | **Gone** (pass 10) |
 | `DashboardApi.ts:16,22` | `BASE_URL + "/admin/..."` gives `//admin` | **Gone** (pass 10) |
 | `Product.tsx:319` | Effect depends on `[tableParams]`; every sort or page click refetches everything | **Gone** (pass 10) |
@@ -390,15 +463,15 @@ The version mismatches and duplicate copies are gone: Bootstrap CSS/JS is remove
 | --- | --- | --- |
 | Several kits on one screen | **Done** | antd everywhere |
 | No shared theme; several brand-teal shades and blues | **Done** | One palette in `index.css` and an app-wide antd theme built from it (pass 8); a test keeps colour literals out of every other file |
-| 15 date display formats | **Open** | Still 15, including both `DD/MM/YYYY` and `MM/DD/YYYY` |
-| "Welcome Melanie", "Employee(s) deleted", "Number of Services", two "Status" columns in Products, Change Password at `/reset-password` | **Partly** | Pass 10: the greeting went with the old dashboard, the Products columns with the app's screens, and Specialities' count is titled "Professionals"; "Employee(s)" (a log line on Professionals) and `/reset-password` remain |
-| Current page never highlighted | **Done** | Pass 10: the sidebar selects the current page (and the item a sub-page belongs to) and opens its group |
+| 15 date display formats | **Open** | Now about 18 display formats and 4 picker formats, including both `DD/MM/YYYY` and `MM/DD/YYYY` (Oct 30 audit, X-10) |
+| "Welcome Melanie", "Employee(s) deleted", "Number of Services", two "Status" columns in Products, Change Password at `/reset-password` | **Partly** | Pass 10: the greeting went with the old dashboard, the Products columns with the app's screens, and Specialities' count is titled "Professionals". The delete message now says "User(s) deleted"; only a log line still says "employee(s)" (`Professionals.tsx:299`). `/reset-password` remains. |
+| Current page never highlighted | **Partly** | Pass 10: the sidebar selects the current page and opens its group, and a sub-page under its list's path selects its list. The 20 add, edit and view routes outside their list's path select nothing (Oct 30 audit, X-13). |
 | Scrollbars hidden (`index.css`, `MainLayout.scss`) | **Open** | |
 | Header menu needs Bootstrap JS; `<li>` in a `<div>`; "Sign Out" link without `to` | **Done** | antd Dropdown |
 | Banner row checkboxes with no bulk action | **Done** | Removed |
 | Orders shows plain "Loading..." text | **Gone** | The app's orders screen is removed (pass 10) |
 | Deprecated antd props (`visible`, `bodyStyle`) | **Done** | Part of the antd 6 migration |
-| 14 `<a>` elements without `href` | **Open** | Lint reports 14 `anchor-is-valid` warnings |
+| 14 `<a>` elements without `href` | **Partly** | 1 left: `Specialities.tsx:62` (lint `anchor-is-valid`) |
 
 ### Code health
 
@@ -406,9 +479,9 @@ The version mismatches and duplicate copies are gone: Bootstrap CSS/JS is remove
 | --- | --- | --- |
 | No shared HTTP client; two auth schemes | **Done** | One client in `utils/session.ts` sends `Authorization: Bearer` on every call (pass 9) |
 | List-page logic copy-pasted about 40 times | **Open** | |
-| Lint findings | **Partly** | Now oxlint: 43 hook-dependency, 14 anchor, 4 missing-key warnings; 0 errors |
-| Misspelled file names | **Partly** | Logo renamed; `ViewSericeCategory.jsx` deleted. Still misspelled: `Directroy.tsx`, `Eductaion/AddEduction.tsx`, `Eductaion/Eduction.tsx`, `AddServiceCategroy.tsx`, `EcommeceApi.ts`, `Viewad.tsx`. |
-| No tests, boilerplate README, no Node pin | **Done** | 21 tests, new README, `engines` set (no `.nvmrc`) |
+| Lint findings | **Partly** | Now oxlint: 0 errors; 16 warnings (14 hook-dependency, 1 anchor, 1 missing key) |
+| Misspelled file names | **Partly** | Logo renamed; `ViewSericeCategory.jsx` deleted; `AddServiceCategroy.tsx` and `EcommeceApi.ts` went with the app's screens (pass 10). Still misspelled: `Directroy.tsx`, `Eductaion/AddEduction.tsx`, `Eductaion/Eduction.tsx`, `Viewad.tsx`, `Businesscard.scss`. |
+| No tests, boilerplate README, no Node pin | **Done** | 170 tests in 36 files (Nov 2), new README, `engines` set (no `.nvmrc`) |
 
 ## Decisions to revisit
 
@@ -440,50 +513,29 @@ Strict typing flagged code that reads fields that don't exist, passes arguments 
 - **Access card details:** the business-hours list used `size="4px"`, which antd ignores. It is now `size={4}`.
 - **Create Access Card:** `variant="bordered"` isn't a valid Card value; it is now `"outlined"`, with no visual change.
 
-**Kept as-is, for the bug pass.** Behaviour is unchanged; the code is typed to match what it does today:
+**Kept as-is, for the bug pass.** Behaviour is unchanged; the code is typed to match what it does today. (Oct 30: items that pass 9 fixed or pass 10 removed are taken off this list.)
 
-- **More requests that go out without a token.** Most of these pages passed a token that the API function ignores; those dead arguments were removed, and the requests are unchanged.
-  - Referral and Reward Rules lists
-  - Professional Form list
-  - FAQ delete
-  - Service Category CSV upload (a plain `fetch`)
-  - Every Directory, Ads, journal category, author, journal, education, event and shop call
-  - Access card list and delete
-  - All 20 dashboard stats
 - **Podcast schedules:** "get by id" and "delete" were called without the token, so they sent `Authorization: Bearer undefined`. Fixed in the security pass.
 - **Parameters that never reach the API:** the `order` / `sortField` sent by the Users, Professionals, Clips, Service Categories and Appointments lists, and `limit` on Directory, Authors and Journal Categories. They were removed, so requests are unchanged.
-- **Inconsistent response reads:** Service Categories and Appointments read rows from `data.rows` but the total from a top-level `count`; one of the two is probably wrong.
-- **Edit Service Category:** `handleSubmit` is both the Save button's click handler and the nested form's `onFinish`. Pressing Enter in the title passes form values instead of an event, and throws.
-- **Double fetching:**
-  - User Bookings and Professional Bookings declare the same effect twice, so every tab switch fetches twice.
-  - Edit Access Card fetches the card twice on load.
-- **Professionals:** the promotion handlers reset `selectedProfessional` where `selectedProfession` looks intended, so the profession picker keeps its value.
-- **Create Access Card** shares one city list across all locations, so picking a state for one location replaces the others' city options.
-- **Login Activity:** the spinner never shows, because `loading` is never set to true.
+- **Double fetching:** Edit Access Card fetches the card twice on load (`EditBusinessCard.tsx:357-361, 506-508`; Oct 30 audit, A-04).
+- **Create Access Card** shares one city list across all locations, so picking a state for one location replaces the others' city options (`CreateBusinessCard.tsx:256`).
+- **Login Activity:** the spinner never shows, because `loading` is never set to true (`LoginLogs.tsx:86`).
 
 ## The audit's suggested order, revisited
 
 | Phase | Done | Still to do |
 | --- | --- | --- |
 | 1. Now | Credential logs removed; axios, dompurify and router upgraded; moment removed; keys disabled by the owner; `SafeHtml` for the 6 HTML sites; `noindex` | Nothing left in the panel |
-| 2. This week | MUI removed; route groups decided (deleted); react-toastify, Font Awesome, Bootstrap JS and Popper removed; expired sessions cleared by a global handler | Broken-code table; catch-all 404 route; shared axios client and 401 handling (after the backend answers); confirm server auth on token-less endpoints |
+| 2. This week | MUI removed; route groups decided (deleted); react-toastify, Font Awesome, Bootstrap JS and Popper removed; expired sessions cleared by a global handler; shared axios client, 401 handling and server auth confirmed (pass 9) | The last two broken-code rows (Specialities page, one missing key); catch-all 404 route |
 | 3. Consolidate | antd only; dayjs, one icon set, one editor, chart.js, one cropper; one theme and palette | One date format |
 | 4. Platform | Vite; React 19, antd 6, react-router 8 | `React.lazy` per route |
 
 ## Suggested next steps
 
-1. **Browser QA against the new API** (its testing mode). Nothing has been clicked through since the migration, and the screens of pass 10 have only run in tests. Priorities:
-   - the new screens, with real data: pricing and subscriptions (Stripe test keys), buying and voiding a label (Shippo test keys), approving a directory application, importing a YouTube link;
-   - visual changes from antd 6;
-   - the small fixes listed in [Found during the TypeScript migration](#found-during-the-typescript-migration);
-   - the modals and drawer listed in pass 5;
-   - video previews, the rich-text editor on the journal pages, image cropping.
-2. **Backend changes from pass 10's findings** (the table in pass 10), first the access orders list reading its paging from the query.
-3. **Route-level lazy loading**, to get the 891 KB gzipped bundle off the login path.
-4. **The open bugs** in the broken-code table, plus the "kept as-is" items found during the TypeScript migration.
-5. **Date format:** a single date-format helper (the theme is done, pass 8). Font sizes, spacing and radii are still written per file; tokens for them would be the next step after colour.
-6. **Housekeeping:**
-   - fix the misspelled file names;
-   - replace browser-image-compression;
-   - move Google Places to `PlaceAutocompleteElement` (it already loads on demand);
-   - turn on the oxlint rules that are off today.
+First, deploy pass 11 once the backend's Nov 1 changes are live. Then follow the order in [Oct 30 audit](#oct-30-audit): fix first, then the platform safety net, backend requests, browser QA, consolidation, retirements and hygiene. Still to fit in from the earlier list:
+
+- the last open rows of the broken-code table (Specialities page, one missing key) and the "kept as-is" items found during the TypeScript migration;
+- after the date helper: tokens for font sizes, spacing and radii, which are still written per file;
+- replace browser-image-compression;
+- move Google Places to `PlaceAutocompleteElement` (it already loads on demand);
+- turn on the oxlint rules that are off today.

@@ -80,8 +80,9 @@ interface DirectoryListingFormProps {
 }
 
 /**
- * Adds or edits a directory listing: the website form's fields, its photos and, for a new listing, its status and
- * account type. An edit sends only what changed; photos go with it as multipart.
+ * Adds or edits a directory listing: the fields of the website's directory form (retired; new people join through
+ * the Access form), its photos and, for a new listing, its status and account type. An edit sends only what changed;
+ * photos go with it as multipart.
  */
 const DirectoryListingForm = ({ listing, onSaved, onCancel }: DirectoryListingFormProps) => {
   const [form] = Form.useForm<ListingFormValues>();
@@ -92,7 +93,7 @@ const DirectoryListingForm = ({ listing, onSaved, onCancel }: DirectoryListingFo
   const locations: LocationFields[] = Form.useWatch("locations", form) ?? initial.locations;
   const editing = listing !== undefined;
 
-  // The specialties the website's form offers; any other can be typed.
+  // The specialties the directory form offered; any other can be typed.
   useEffect(() => {
     let current = true;
     GetListingSpecialties()
@@ -221,7 +222,7 @@ const DirectoryListingForm = ({ listing, onSaved, onCancel }: DirectoryListingFo
             </Form.Item>
           </Col>
           <Col span={24}>
-            <Form.Item name="bio" label="Bio" extra="Plain text, as the website's form takes it." rules={[atMost(2000)]}>
+            <Form.Item name="bio" label="Bio" extra="Plain text, as the directory form took it." rules={[atMost(2000)]}>
               <Input.TextArea rows={5} maxLength={2000} showCount />
             </Form.Item>
           </Col>
@@ -383,7 +384,9 @@ const DirectoryListingForm = ({ listing, onSaved, onCancel }: DirectoryListingFo
       </Panel>
 
       <Panel>
-        <Heading hint="What the applicant answered on the website's form.">Answers on the form</Heading>
+        <Heading hint="What the applicant answered on the website's directory form, which is now retired.">
+          Answers on the form
+        </Heading>
         <Row gutter={16}>
           <Col xs={24} md={12}>
             <Form.Item name="excites_about_glamlink" label="What excites them about Glamlink">

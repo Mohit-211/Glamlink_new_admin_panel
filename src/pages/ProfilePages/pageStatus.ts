@@ -5,6 +5,10 @@ import type { PageRow, PageType, PageView } from "../../types/profile";
 /** A page's address on the website. */
 export const publicPageUrl = (slug: string) => websiteUrl(`/profiles/${slug}`);
 
+/** An Education post's own page on the website: /profiles/<page>/education/<post>. */
+export const educationPostUrl = (pageSlug: string, postSlug: string) =>
+  `${publicPageUrl(pageSlug)}/education/${encodeURIComponent(postSlug)}`;
+
 /** The address without "https://", for showing. */
 export const shortUrl = (url: string) => url.replace(/^https?:\/\//, "");
 

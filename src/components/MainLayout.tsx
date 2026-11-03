@@ -28,6 +28,7 @@ import {
   ProfileOutlined,
   QuestionCircleOutlined,
   ReadOutlined,
+  SafetyCertificateOutlined,
   SearchOutlined,
   SnippetsOutlined,
   ShoppingOutlined,
@@ -53,10 +54,12 @@ import {
   GetPendingFormCount,
 } from "../services/Api/Api";
 import { GetPendingDirectoryApplicationCount } from "../services/Api/DirectoryApplicationsApi";
+import { GetPendingClaimCount } from "../services/Api/ListingClaimsApi";
 import logo from "../assets/glamlink-logo-black.png";
 import { Badge } from "antd";
 import "./MainLayout.scss";
 import { clearSession, useSessionToken } from "../utils/session";
+import { onRecountBadges } from "../utils/badges";
 import type { Admin } from "../types/admin";
 const { Header, Sider, Content } = Layout;
 
@@ -66,6 +69,8 @@ type MenuItem = Required<MenuProps>["items"][number];
 interface PendingCounts {
   applicants: number;
   applications: number;
+  /** Google listing claims to verify. */
+  claims: number;
 }
 
 const withBadge = (label: string, count: number) => (
@@ -89,6 +94,11 @@ const menuItems = (counts: PendingCounts): MenuItem[] => [
     key: "/directory-applications",
     icon: <AuditOutlined />,
     label: withBadge("Directory Applications", counts.applications),
+  },
+  {
+    key: "/directory-claims",
+    icon: <SafetyCertificateOutlined />,
+    label: withBadge("Listing Claims", counts.claims),
   },
   {
     key: "group:inquiries",
@@ -172,7 +182,9 @@ const MainLayout = () => {
   // Re-renders when the session starts or ends (here or in another tab).
   const token = useSessionToken();
   const [idData, setIdData] = React.useState<Partial<Admin>>({});
-  const [counts, setCounts] = useState<PendingCounts>({ applicants: 0, applications: 0 });
+  const [counts, setCounts] = useState<PendingCounts>({ applicants: 0, applications: 0, claims: 0 });
+  // Bumped when a screen asks for a recount without leaving the page (utils/badges).
+  const [recounts, setRecounts] = useState(0);
   const { pathname } = useLocation();
   const getData = async (adminToken: string) => {
     try {
@@ -189,7 +201,10 @@ const MainLayout = () => {
     if (token) getData(token);
   }, [token]);
 
-  // The badges are counted on sign-in and again on each change of page, so a review shows in them at once.
+  useEffect(() => onRecountBadges(() => setRecounts((n) => n + 1)), []);
+
+  // The badges are counted on sign-in, again on each change of page and when a screen asks, so a review shows in them
+  // at once.
   useEffect(() => {
     if (!token) return;
     let current = true;
@@ -201,10 +216,11 @@ const MainLayout = () => {
         .catch((err) => console.error(`Failed to fetch the ${key} count:`, err));
     count("applicants", async () => Number.parseInt(String((await GetPendingFormCount()).data.data), 10));
     count("applications", GetPendingDirectoryApplicationCount);
+    count("claims", GetPendingClaimCount);
     return () => {
       current = false;
     };
-  }, [token, pathname]);
+  }, [token, pathname, recounts]);
 
   const [collapsed, setCollapsed] = useState(false);
   const {

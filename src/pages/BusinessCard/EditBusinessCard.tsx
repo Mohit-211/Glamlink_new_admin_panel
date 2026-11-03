@@ -48,6 +48,7 @@ import {
   titleRules,
   videoProblem,
 } from "./cardRules";
+import { CARD_TYPE_OPTIONS, cardTypeOf } from "./cardType";
 import type {
   BusinessCardFormValues,
   CardVideo,
@@ -302,6 +303,8 @@ const EditBusinessCard = () => {
   const [form] = Form.useForm<BusinessCardFormValues>();
   const navigate = useNavigate();
   const id = useIdParam();
+  // A brand's title is optional (its tagline).
+  const cardType = Form.useWatch("professional_type", form);
 
   const [profileImage, setProfileImage] = useState<UploadFile[]>([]);
   const [images, setImages] = useState<GalleryImage[]>([]);
@@ -429,6 +432,7 @@ const EditBusinessCard = () => {
 
       form.setFieldsValue({
         ...data,
+        professional_type: cardTypeOf(data),
         // Featured links live in component state on this page, not in the form.
         featured_links: undefined,
 
@@ -677,6 +681,7 @@ const EditBusinessCard = () => {
 
       const basicFields: (keyof BusinessCardFormValues)[] = [
         "name",
+        "professional_type",
         "business_name",
         "professional_title",
         "bio",
@@ -824,13 +829,25 @@ const EditBusinessCard = () => {
             title="Basic Info"
             style={{ borderRadius: 8, boxShadow: "0 2px 8px var(--color-shadow)" }}
           >
-            <Form.Item name="name" label="Name" rules={nameRules}>
+            <Form.Item
+              name="professional_type"
+              label="Type"
+              extra="A brand needs no title, specialties or booking method."
+            >
+              <Select options={CARD_TYPE_OPTIONS} />
+            </Form.Item>
+            <Form.Item name="name" label={cardType === "brand" ? "Contact Name" : "Name"} rules={nameRules}>
               <Input style={{ borderRadius: "6px", height: "40px" }} />
             </Form.Item>
             <Form.Item name="business_name" label="Business Name" rules={businessNameRules}>
               <Input style={{ borderRadius: "6px", height: "40px" }} />
             </Form.Item>
-            <Form.Item name="professional_title" label="Title" rules={titleRules}>
+            <Form.Item
+              name="professional_title"
+              label={cardType === "brand" ? "Tagline (optional)" : "Title"}
+              dependencies={["professional_type"]}
+              rules={titleRules(cardType)}
+            >
               <Input style={{ borderRadius: "6px", height: "40px" }} />
             </Form.Item>
             <Form.Item
@@ -1492,6 +1509,9 @@ const EditBusinessCard = () => {
             boxShadow: "0 2px 8px var(--color-shadow)",
           }}
         >
+          <p style={{ color: "var(--color-text-secondary)", marginTop: -4, marginBottom: 16, fontSize: 13 }}>
+            Optional: a card without a location shows no address or map. Removing every location clears them.
+          </p>
           <Form.List name="locations">
             {(fields, { add, remove }) => (
               <>

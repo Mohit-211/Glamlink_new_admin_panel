@@ -14,7 +14,7 @@ const AddDirectoryListing = () => {
     <div>
       <PageHeader
         title="Add listing"
-        subtitle="A directory listing for someone who hasn't applied on the website."
+        subtitle="A directory listing for someone, added by hand. The website's directory form is retired: new people join through the Access form."
         back={back}
       />
       <DirectoryListingForm

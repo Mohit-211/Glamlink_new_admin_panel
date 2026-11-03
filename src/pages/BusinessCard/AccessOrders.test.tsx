@@ -105,6 +105,36 @@ const openRatePicker = async (details: HTMLElement) => {
   return title.closest<HTMLElement>('[role="dialog"]')!;
 };
 
+/** The confirmation that "Cancel order" opens over the order's details. */
+const openCancel = async (details: HTMLElement) => {
+  fireEvent.click(within(details).getByRole("button", { name: /Cancel order/ }));
+  const title = await screen.findByText("Cancel order GL-20261020-000007?");
+  return title.closest<HTMLElement>('[role="dialog"]')!;
+};
+
+const LIST_URL = `${API}businessCard/access-orders`;
+const listCalls = () => vi.mocked(axios.get).mock.calls.filter(([url]) => url === LIST_URL);
+
+/** Picks an option of an antd Select. */
+const choose = async (combobox: HTMLElement, label: string) => {
+  fireEvent.mouseDown(combobox);
+  const option = await waitFor(() => {
+    const found = [...document.querySelectorAll<HTMLElement>(".ant-select-item-option")].find(
+      (el) => el.textContent === label,
+    );
+    if (!found) throw new Error(`No option "${label}"`);
+    return found;
+  });
+  fireEvent.click(option);
+};
+
+/** The list's row for an order (its number also shows in the details). */
+const rowOf = (orderNumber: string) =>
+  screen
+    .getAllByText(orderNumber)
+    .map((el) => el.closest("tr"))
+    .find(Boolean) as HTMLElement;
+
 describe("Access orders: shipping labels", () => {
   it("buys the label with the rate picked and shows it, ready to print", async () => {
     answerGets({
@@ -201,5 +231,247 @@ describe("Access orders: Access Pro alone", () => {
     expect(await within(details).findByText("Access Pro only: nothing to ship.")).toBeInTheDocument();
     expect(within(details).queryByRole("button", { name: /Buy label/ })).not.toBeInTheDocument();
     expect(within(details).queryByText("Shipping label")).not.toBeInTheDocument();
+  });
+});
+
+describe("Access orders: the list", () => {
+  it("pages, searches and filters on the server", async () => {
+    answerGets({
+      "businessCard/access-orders": { data: [keychainOrder, proOrder], pagination: { total: 120, page: 1, limit: 50 } },
+    });
+    renderAt("/access-orders");
+
+    expect(await screen.findByText("GL-20261020-000007")).toBeInTheDocument();
+    expect(axios.get).toHaveBeenCalledWith(LIST_URL, { params: { page: 1, limit: 50 } });
+    // Pages by the API's total, at the page size it used.
+    expect(screen.getByText("120 orders")).toBeInTheDocument();
+    expect(screen.getByTitle("3")).toBeInTheDocument();
+    expect(screen.queryByTitle("4")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("Search by name, email or order #"), { target: { value: " jane " } });
+    await waitFor(() => expect(listCalls().at(-1)?.[1]).toEqual({ params: { page: 1, limit: 50, search: "jane" } }));
+
+    await choose(screen.getByRole("combobox", { name: "Fulfillment" }), "Shipped");
+    await waitFor(() =>
+      expect(listCalls().at(-1)?.[1]).toEqual({
+        params: { page: 1, limit: 50, search: "jane", fulfillment_status: "shipped" },
+      }),
+    );
+
+    await choose(screen.getByRole("combobox", { name: "Payment" }), "Refunded");
+    await waitFor(() =>
+      expect(listCalls().at(-1)?.[1]).toEqual({
+        params: { page: 1, limit: 50, search: "jane", payment_status: "refunded", fulfillment_status: "shipped" },
+      }),
+    );
+
+    fireEvent.click(screen.getByTitle("2"));
+    await waitFor(() =>
+      expect(listCalls().at(-1)?.[1]).toEqual({
+        params: { page: 2, limit: 50, search: "jane", payment_status: "refunded", fulfillment_status: "shipped" },
+      }),
+    );
+  });
+
+  it("tags cancelled orders, whichever status says so, and offers no fulfillment for them", async () => {
+    const cancelledKeychain: AccessOrder = {
+      ...keychainOrder,
+      id: 9,
+      order_number: "GL-20261022-000009",
+      payment_status: "cancelled",
+    };
+    const cancelledPro: AccessOrder = { ...proOrder, id: 10, order_number: "GL-20261023-000010", fulfillment_status: "cancelled" };
+    answerGets({
+      "businessCard/access-orders": { data: [cancelledKeychain, cancelledPro], pagination: { total: 2, page: 1, limit: 50 } },
+    });
+    renderAt("/access-orders");
+
+    await screen.findByText("GL-20261022-000009");
+    const keychainRow = rowOf("GL-20261022-000009");
+    expect(within(keychainRow).getByText("Cancelled")).toBeInTheDocument();
+    expect(within(keychainRow).queryByRole("combobox")).not.toBeInTheDocument();
+    // Said once, by the tag.
+    expect(within(keychainRow).queryByText("CANCELLED")).not.toBeInTheDocument();
+    expect(within(keychainRow).getByText("1 Main St")).toBeInTheDocument();
+
+    const proRow = rowOf("GL-20261023-000010");
+    expect(within(proRow).getByText("Cancelled")).toBeInTheDocument();
+    expect(within(proRow).getByText("PAID")).toBeInTheDocument();
+    expect(within(proRow).getByText("Access Pro only")).toBeInTheDocument();
+  });
+
+  it("reads a cancellation from cancelled_at, as the API answers it, and filters cancelled orders with cancelled=true", async () => {
+    // The API keeps the payment status ("paid": refunds are made by hand) and sets cancelled_at.
+    const cancelledPro: AccessOrder = { ...proOrder, id: 11, order_number: "GL-20261024-000011", cancelled_at: "2026-11-01T10:00:00Z" };
+    answerGets({
+      "businessCard/access-orders": { data: [cancelledPro], pagination: { total: 1, page: 1, limit: 50 } },
+    });
+    renderAt("/access-orders");
+
+    await screen.findByText("GL-20261024-000011");
+    const row = rowOf("GL-20261024-000011");
+    expect(within(row).getByText("Cancelled")).toBeInTheDocument();
+    expect(within(row).getByText("PAID")).toBeInTheDocument();
+
+    await choose(screen.getByRole("combobox", { name: "Payment" }), "Cancelled");
+    await waitFor(() => expect(listCalls().at(-1)?.[1]).toEqual({ params: { page: 1, limit: 50, cancelled: "true" } }));
+  });
+});
+
+describe("Access orders: cancelling", () => {
+  it("cancels an order only after saying what happens, then shows it cancelled", async () => {
+    answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/7": keychainOrder });
+    const { business_card: _card, ...withoutCard } = keychainOrder;
+    vi.mocked(axios.post).mockResolvedValue({ data: { data: { ...withoutCard, fulfillment_status: "cancelled" } } });
+    renderAt("/access-orders/7");
+
+    const details = await screen.findByRole("dialog");
+    const confirm = await openCancel(details);
+    expect(
+      within(confirm).getByText(
+        "Marks the order cancelled, stops an unshipped keychain, and ends the Access Pro subscription bought with it right away. No refund is made: refund a keychain manually in Stripe if needed. Subscriptions are not refunded.",
+      ),
+    ).toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+
+    fireEvent.change(within(confirm).getByLabelText("Reason (optional)"), { target: { value: " Ordered twice " } });
+    fireEvent.click(within(confirm).getByRole("button", { name: "Cancel order" }));
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(`${API}businessCard/access-orders/7/cancel`, { reason: "Ordered twice" }),
+    );
+    expect(await within(details).findByText("This order is cancelled")).toBeInTheDocument();
+    expect(within(details).getByText("CANCELLED")).toBeInTheDocument();
+    // Nothing left to buy, change or cancel.
+    expect(within(details).queryByRole("button", { name: /Buy label/ })).not.toBeInTheDocument();
+    expect(within(details).queryByRole("button", { name: /Cancel order/ })).not.toBeInTheDocument();
+    expect(within(details).queryByText("Tracking Number")).not.toBeInTheDocument();
+    // The list follows.
+    expect(within(rowOf("GL-20261020-000007")).getByText("Cancelled")).toBeInTheDocument();
+  });
+
+  it("shows the API's reason when it can't be cancelled, and the order as it is now", async () => {
+    answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/7": keychainOrder });
+    vi.mocked(axios.post).mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 409,
+        data: { code: "ORDER_SHIPPED", message: "Its keychain has shipped, so the order can't be cancelled." },
+      },
+    });
+    renderAt("/access-orders/7");
+
+    const confirm = await openCancel(await screen.findByRole("dialog"));
+    fireEvent.click(within(confirm).getByRole("button", { name: "Cancel order" }));
+
+    expect(
+      await within(confirm).findByText("Its keychain has shipped, so the order can't be cancelled."),
+    ).toBeInTheDocument();
+    expect(axios.post).toHaveBeenCalledWith(`${API}businessCard/access-orders/7/cancel`, {});
+    // The details behind it are loaded again.
+    await waitFor(() =>
+      expect(vi.mocked(axios.get).mock.calls.filter(([url]) => url === `${API}businessCard/access-orders/7`)).toHaveLength(2),
+    );
+  });
+});
+
+describe("Access orders: what Stripe recorded, and the checkout", () => {
+  it("words a partial refund as such, with how much of what was paid", async () => {
+    const partly = {
+      ...keychainOrder,
+      payment_status: "partially_refunded",
+      refunded_amount: "5.00",
+      refunded_at: "2026-11-02T18:00:00.000Z",
+    };
+    answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/7": partly });
+    renderAt("/access-orders/7");
+
+    const details = await screen.findByRole("dialog");
+    expect(await within(details).findByText("Partly refunded")).toBeInTheDocument();
+    expect(within(details).getByText(/^\$5\.00 of \$44\.99 was refunded in Stripe on Nov 02, 2026/)).toBeInTheDocument();
+    expect(within(details).getByText(/A refund changes no plan, seat or shipping/)).toBeInTheDocument();
+    expect(within(details).getByText("PARTLY REFUNDED")).toBeInTheDocument();
+  });
+
+  it("shows a full refund", async () => {
+    const refunded = { ...proOrder, payment_status: "refunded", refunded_amount: "4.99", refunded_at: "2026-11-02T18:00:00.000Z" };
+    answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/8": refunded });
+    renderAt("/access-orders/8");
+
+    const details = await screen.findByRole("dialog");
+    expect(await within(details).findByText("Refunded in full")).toBeInTheDocument();
+    expect(within(details).getByText(/^\$4\.99 was refunded in Stripe on/)).toBeInTheDocument();
+  });
+
+  it("shows an open dispute with Stripe's status, and a settled one as settled", async () => {
+    const disputed = {
+      ...keychainOrder,
+      payment_status: "disputed",
+      dispute_status: "needs_response",
+      disputed_at: "2026-11-02T18:00:00.000Z",
+    };
+    answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/7": disputed });
+    const { unmount } = renderAt("/access-orders/7");
+
+    let details = await screen.findByRole("dialog");
+    expect(await within(details).findByText("Disputed")).toBeInTheDocument();
+    expect(
+      within(details).getByText(/disputed the payment on Nov 02, 2026.* Stripe says: needs a response\. Answer it in Stripe's dashboard/),
+    ).toBeInTheDocument();
+    expect(within(details).getByText("DISPUTED")).toBeInTheDocument();
+    unmount();
+
+    answerGets({
+      "businessCard/access-orders": ordersList,
+      "businessCard/access-orders/7": { ...disputed, payment_status: "paid", dispute_status: "won" },
+    });
+    renderAt("/access-orders/7");
+    details = await screen.findByRole("dialog");
+    expect(await within(details).findByText("A dispute was settled")).toBeInTheDocument();
+    expect(within(details).getByText(/Stripe says: won\. The payment stands\./)).toBeInTheDocument();
+  });
+
+  it("dates a cancellation, and shows a purchase that was paid but not given", async () => {
+    const cancelled = { ...proOrder, cancelled_at: "2026-11-01T18:00:00.000Z", cancel_reason: "Ordered twice" };
+    answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/8": cancelled });
+    const { unmount } = renderAt("/access-orders/8");
+
+    let details = await screen.findByRole("dialog");
+    expect(await within(details).findByText(/^Cancelled Nov 01, 2026, .* PT\. Nothing more ships for it.* Reason: Ordered twice$/)).toBeInTheDocument();
+    unmount();
+
+    // Paid, but the API couldn't give it: the order isn't cancelled, and says to refund it.
+    const notGiven = { ...proOrder, cancel_reason: "Paid but not given (a second Access Pro): refund it in Stripe." };
+    answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/8": notGiven });
+    renderAt("/access-orders/8");
+    details = await screen.findByRole("dialog");
+    expect(await within(details).findByText("Paid but not given")).toBeInTheDocument();
+    expect(within(details).getByText("Paid but not given (a second Access Pro): refund it in Stripe.")).toBeInTheDocument();
+    expect(within(details).queryByText("This order is cancelled")).not.toBeInTheDocument();
+  });
+
+  it("names what the checkout bought and its ids at Stripe", async () => {
+    const withCheckout = {
+      ...keychainOrder,
+      checkout: {
+        id: 41,
+        plan_type: "nfc_with_subscription",
+        status: "paid",
+        stripe_subscription_id: "sub_123",
+        stripe_payment_intent_id: null,
+        stripe_invoice_id: "in_456",
+      },
+    };
+    answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/7": withCheckout });
+    renderAt("/access-orders/7");
+
+    const details = await screen.findByRole("dialog");
+    expect(await within(details).findByText("Access Pro + NFC keychain")).toBeInTheDocument();
+    expect(within(details).getByText("sub_123")).toBeInTheDocument();
+    expect(within(details).getByText("in_456")).toBeInTheDocument();
+    expect(within(details).queryByText("Payment in Stripe")).not.toBeInTheDocument();
+    // Nothing refunded or disputed: nothing said about it.
+    expect(within(details).queryByText(/refunded in Stripe/)).not.toBeInTheDocument();
+    expect(within(details).queryByText("Disputed")).not.toBeInTheDocument();
   });
 });

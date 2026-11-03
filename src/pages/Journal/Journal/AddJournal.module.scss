@@ -100,53 +100,6 @@ $shadow-card: 0 1px 2px var(--color-shadow);
   padding: 22px;
 }
 
-// ---- Cover image ----
-.coverUploadArea {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.coverPreview {
-  width: 220px;
-  height: 124px;
-  border-radius: $radius-sm;
-  border: 1px dashed $border-strong;
-  background: $bg-soft;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  flex-shrink: 0;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-}
-
-.coverEmpty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  color: $text-secondary;
-  font-size: 12px;
-}
-
-.coverActions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.coverHelp {
-  font-size: 12px;
-  color: $text-secondary;
-}
-
 // ---- Downloads ----
 .downloadsEmpty {
   border: 1px dashed $border-strong;
@@ -263,14 +216,6 @@ $shadow-card: 0 1px 2px var(--color-shadow);
 
   .sectionBody {
     padding: 16px;
-  }
-
-  .coverUploadArea {
-    flex-direction: column;
-  }
-
-  .coverPreview {
-    width: 100%;
   }
 
   .footerBar {

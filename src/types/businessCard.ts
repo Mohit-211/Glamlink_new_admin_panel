@@ -55,9 +55,14 @@ type Stored<T> = T | string | null;
 
 export type CardStatus = "draft" | "pending" | "accepted" | "rejected";
 
+/** Who the card is for (`professional_type`): a professional ("individual", the default) or a brand. */
+export type CardType = "individual" | "brand";
+
 export interface BusinessCard {
   id: number;
   name: string;
+  /** A brand needs no title, specialties or booking method. Missing on answers from before types: a professional. */
+  professional_type?: CardType;
   business_name?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -109,6 +114,7 @@ export interface BusinessCard {
  */
 export interface BusinessCardFormValues {
   name: string;
+  professional_type?: CardType;
   business_name?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -155,7 +161,8 @@ export interface PurchaseInfo {
   color: string;
 }
 
-export type FulfillmentStatus = "pending" | "processing" | "shipped" | "delivered";
+/** "cancelled" comes only from cancelling the order (CancelAccessOrder), never from the fulfillment form. */
+export type FulfillmentStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
 
 /** A paid access-card order (NFC keychain and/or subscription). */
 export interface AccessOrder {
@@ -166,7 +173,11 @@ export interface AccessOrder {
   customer_email?: string | null;
   amount_paid?: number | string | null;
   shipping_amount?: number | string | null;
+  /** "paid", "failed", "refunded", "partially_refunded" or "disputed": what happened to the money. */
   payment_status?: string | null;
+  /** Set when an admin cancelled the order (no refund is made; a cancelled order keeps its payment status). */
+  cancelled_at?: string | null;
+  cancel_reason?: string | null;
   /** Null for subscription-only orders, which ship nothing. */
   fulfillment_status?: FulfillmentStatus | null;
   tracking_number?: string | null;
@@ -204,4 +215,17 @@ export interface FulfillmentUpdate {
   fulfillment_status?: FulfillmentStatus;
   tracking_number?: string | null;
   tracking_link?: string | null;
+}
+
+/** GET /businessCard/access-orders: newest first. Each filter is an exact match. */
+export interface AccessOrderListParams {
+  page?: number;
+  /** 10 by default; the API may cap it (at 50 or 100). */
+  limit?: number;
+  /** Order number, customer name or email. */
+  search?: string;
+  payment_status?: string;
+  fulfillment_status?: FulfillmentStatus;
+  /** "true": only cancelled orders; "false": none of them. */
+  cancelled?: "true" | "false";
 }

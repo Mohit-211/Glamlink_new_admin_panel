@@ -40,8 +40,8 @@ const catalog: AccessCatalog = {
   plans: [],
   settings: {
     entitlements: {
-      free: { photos: 4, videos: 1, edit_details: true, edit_media: false, special_offers: false, analytics: false, priority_search: false },
-      pro: { photos: 4, videos: 1, edit_details: true, edit_media: true, special_offers: true, analytics: true, priority_search: true },
+      free: { photos: 4, videos: 1, edit_details: true, edit_media: false, analytics: false, priority_search: false },
+      pro: { photos: 4, videos: 1, edit_details: true, edit_media: true, analytics: true, priority_search: true },
     },
     keychains_per_person: 1,
     shipping: {
@@ -177,6 +177,21 @@ describe("Access pricing: settings", () => {
     fireEvent.click(screen.getByRole("button", { name: /Save shipping/ }));
 
     await waitFor(() => expect(axios.put).toHaveBeenCalledWith(`${API}access/admin/settings`, { shipping }));
+  });
+
+  it("saves what Free and Pro may do without special offers, which the API retired", async () => {
+    // An API from before Nov 1 still answers the retired key: it is neither shown nor sent back.
+    const { entitlements } = catalog.settings;
+    const older = { free: { ...entitlements.free, special_offers: false }, pro: { ...entitlements.pro, special_offers: true } };
+    answerGets({ "access/admin/catalog": { ...catalog, settings: { ...catalog.settings, entitlements: older } } });
+    vi.mocked(axios.put).mockResolvedValue({ data: { data: catalog.settings } });
+    renderTab("settings");
+
+    fireEvent.click(await screen.findByRole("button", { name: /Save plan features/ }));
+
+    await waitFor(() => expect(axios.put).toHaveBeenCalledWith(`${API}access/admin/settings`, { entitlements }));
+    expect(screen.queryByText(/special offers/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Performance analytics")).toBeInTheDocument();
   });
 });
 

@@ -1,11 +1,15 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { afterAll, afterEach } from "vitest";
 
 afterEach(() => {
   cleanup();
   localStorage.clear();
 });
+
+// React's scheduler can still have a task queued (setImmediate) when a file's last test ends; let it run before
+// Vitest tears jsdom down, or it throws "window is not defined" as an unhandled error and fails the run.
+afterAll(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
 
 // jsdom has no layout engine; ProseMirror (rich-text editor) and antd call these.
 if (!document.elementFromPoint) document.elementFromPoint = () => null;

@@ -2,9 +2,13 @@ import type { FormInstance, FormRule } from "antd";
 import { apiErrorBody } from "../../utils/apiError";
 import { showFieldError } from "../../utils/formErrors";
 import { htmlToText } from "../../utils/sanitizeHtml";
+import type { CardType } from "../../types/businessCard";
 
 // The API checks a card with the website form's rules (backend docs/access.md, section 1).
 // These mirror the ones an admin is likely to hit, so the form says so before saving.
+// Since Nov 1 a brand needs no title, specialties or booking method, and no card needs a location. The form never
+// checked specialties, booking methods or locations itself: the API refuses a professional without a specialty or a
+// booking method, and showCardError puts that on the field.
 
 export const BIO_MAX = 80;
 /** Up to 20 photos and 1 video for an admin (owners are limited by their plan). */
@@ -33,8 +37,9 @@ export const nameRules: FormRule[] = [
   { required: true, whitespace: true, message: "Name is required" },
   { max: 100, message: "At most 100 characters" },
 ];
-export const titleRules: FormRule[] = [
-  { required: true, whitespace: true, message: "Title is required" },
+/** Title: required for a professional; a brand's (its tagline) is optional. */
+export const titleRules = (type: CardType | undefined): FormRule[] => [
+  ...(type === "brand" ? [] : [{ required: true, whitespace: true, message: "Title is required" }]),
   { max: 100, message: "At most 100 characters" },
 ];
 export const businessNameRules: FormRule[] = [
@@ -65,7 +70,10 @@ export const phoneRules = (form: FormInstance): FormRule[] => [
 ];
 
 // API field names that differ from this form's.
-const FORM_FIELD: Record<string, string> = { instagram: "instagram_links" };
+const FORM_FIELD: Record<string, string> = {
+  instagram: "instagram_links",
+  preferred_booking_methods: "preferred_booking_method",
+};
 
 /**
  * Shows a 400 INVALID_CARD on the field it names (`details.field`) and returns its message.

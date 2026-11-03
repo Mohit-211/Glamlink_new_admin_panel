@@ -29,6 +29,7 @@ import { GetSearchTerms } from "../../services/Api/SiteApi";
 import { GetPendingDirectoryApplicationCount } from "../../services/Api/DirectoryApplicationsApi";
 import { GetSubscriptions } from "../../services/Api/AccessAdminApi";
 import type { SearchTerm } from "../../types/content";
+import type { FulfillmentStatus } from "../../types/businessCard";
 import styles from "./Dashboard.module.scss";
 
 interface Tile {
@@ -60,8 +61,7 @@ const SECTIONS: { title: string; tiles: Tile[] }[] = [
         title: "Keychain orders to ship",
         icon: <TruckOutlined />,
         to: "/access-orders",
-        // Until the API reads the list's paging from the query (it reads the body, which a GET has none of).
-        hint: "Pending or processing, among the newest 10 orders the API lists",
+        hint: "Paid, pending or processing; cancelled orders excluded",
         attention: true,
       },
     ],
@@ -98,6 +98,21 @@ const SECTIONS: { title: string; tiles: Tile[] }[] = [
   },
 ];
 
+/**
+ * Keychain orders waiting to ship, counted by the API: paid, and pending or processing. A cancelled order never
+ * matches, whichever status reads "cancelled", and failed or refunded payments don't ship.
+ */
+const countOrdersToShip = async () => {
+  const count = async (fulfillment_status: FulfillmentStatus) => {
+    const res = await GetAllAccessOrders({ page: 1, limit: 1, payment_status: "paid", fulfillment_status });
+    const total = res.data.data?.pagination?.total;
+    if (typeof total !== "number") throw new Error("The access orders list answered no total");
+    return total;
+  };
+  const [pending, processing] = await Promise.all([count("pending"), count("processing")]);
+  return pending + processing;
+};
+
 /** Every number on the dashboard, each loaded on its own: one that fails shows a dash, not an error page. */
 const loadCounts = (): Record<string, Promise<number>> => {
   const cards = GetAllBusinessCards().then((res) => res.data.data ?? []);
@@ -108,11 +123,7 @@ const loadCounts = (): Record<string, Promise<number>> => {
     liveCards: cards.then((list) => list.filter((card) => card.status === "accepted").length),
     pendingApplications: GetPendingDirectoryApplicationCount(),
     pendingForms: GetPendingFormCount().then((res) => Number.parseInt(String(res.data.data), 10) || 0),
-    ordersToShip: GetAllAccessOrders({ page: 1, limit: 200 }).then(
-      (res) =>
-        (res.data.data?.data ?? []).filter((o) => o.fulfillment_status === "pending" || o.fulfillment_status === "processing")
-          .length,
-    ),
+    ordersToShip: countOrdersToShip(),
     proSeats: GetSubscriptions({ status: "active" }).then((res) => res.data.data.length),
     professionals: GetProfessionals({ page: 1, limit: 1 }).then((res) => res.data.data.count),
     pages: GetPages({ limit: 1 }).then((res) => res.data.data.count),

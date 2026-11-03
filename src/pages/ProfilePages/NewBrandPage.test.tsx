@@ -58,11 +58,15 @@ describe("Professional and brand pages: a new brand page", () => {
       is_featured: false,
       featured_order: 0,
       tagline: null,
+      intro: null,
       about: null,
       website: null,
       social: null,
+      category: null,
+      shipping: null,
       image: null,
       cover_image: null,
+      about_image: null,
     });
   });
 

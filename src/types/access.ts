@@ -84,8 +84,7 @@ export interface Entitlements {
   edit_details: boolean;
   /** Photos, the video and the profile image. */
   edit_media: boolean;
-  special_offers: boolean;
-  /** Not built yet. */
+  /** The card's and the page's numbers (enforced since Nov 1; admins always see them). */
   analytics: boolean;
   /** Not built yet. */
   priority_search: boolean;

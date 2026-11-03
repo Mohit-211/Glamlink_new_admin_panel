@@ -10,8 +10,8 @@ import type {
   NewDirectoryListing,
 } from "../../types/directoryApplication";
 
-// Directory applications from the website's form, and the listings admins add. A refusal is 400 INVALID_INPUT with
-// `details.field`; a missing application is 404 NOT_FOUND.
+// Directory applications from the website's form (retired: new people join through the Access form), and the listings
+// admins add. A refusal is 400 INVALID_INPUT with `details.field`; a missing application is 404 NOT_FOUND.
 
 type Id = number | string;
 

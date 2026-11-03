@@ -3,6 +3,7 @@ import { BASE_URL } from "../Host";
 import type { ApiResponse } from "../../types/api";
 import type {
   AccessOrder,
+  AccessOrderListParams,
   BusinessCard,
   FeaturedLink,
   FulfillmentUpdate,
@@ -51,17 +52,14 @@ export const UpdateBusinessCard = async (id: Id, formData: FormData) => {
   );
 };
 
-/** A page of orders, newest first, with how many there are in all. */
+/** A page of orders, newest first, with how many match in all. `limit` is the page size the API used. */
 export interface AccessOrderPage {
   data: AccessOrder[];
-  pagination?: { total: number; page: number; limit: number; totalPages: number };
+  pagination?: { total: number; page: number; limit: number; totalPages?: number };
 }
 
-/**
- * The newest orders. The API reads `page` and `limit` from the request body, which a GET can't carry, so it answers
- * its first 10 whatever is asked (until it reads the query); `pagination.total` still counts every order.
- */
-export const GetAllAccessOrders = async (params: { page?: number; limit?: number } = {}) => {
+/** One page of orders, searched and filtered by the API; `pagination.total` counts every order that matches. */
+export const GetAllAccessOrders = async (params: AccessOrderListParams = {}) => {
   return await axios.get<ApiResponse<AccessOrderPage>>(BASE_URL + `businessCard/access-orders`, {
     params,
   });
@@ -102,6 +100,18 @@ export const BuyAccessOrderLabel = async (id: Id, rateId?: string) => {
 /** Voids an unused label (Shippo refunds it); the order goes back to pending. 409 LABEL_IN_USE once it has shipped. */
 export const VoidAccessOrderLabel = async (id: Id) => {
   return axios.post<ApiResponse<VoidedLabel>>(`${BASE_URL}businessCard/access-orders/${id}/label/void`);
+};
+
+/**
+ * Cancels the order and answers it: an unshipped keychain is stopped, and the Access Pro subscription bought with it
+ * ends at once. Nothing is refunded (a keychain is refunded by hand in Stripe; subscriptions never are). 404; 409 when
+ * it is already cancelled, or (perhaps) when its keychain has shipped, with the reason in the message.
+ */
+export const CancelAccessOrder = async (id: Id, reason?: string) => {
+  return axios.post<ApiResponse<AccessOrder>>(
+    `${BASE_URL}businessCard/access-orders/${id}/cancel`,
+    reason ? { reason } : {},
+  );
 };
 
 export const ReorderFeaturedLinks = async (

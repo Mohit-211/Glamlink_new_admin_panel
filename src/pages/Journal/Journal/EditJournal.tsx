@@ -17,7 +17,6 @@ import {
   DatePicker,
   Collapse,
   Checkbox,
-  type UploadFile,
 } from "antd";
 import {
   UploadOutlined,
@@ -55,7 +54,6 @@ import {
   UploadJournalMedia,
 } from "../../../services/Api/JournalApi";
 import { GetAllBusinessCards } from "../../../services/Api/BusinessCardApi";
-import ImgCrop from "antd-img-crop";
 import {
   DndContext,
   closestCenter,
@@ -76,6 +74,7 @@ import { useIdParam } from "../../../utils/routing";
 import { apiErrorMessage } from "../../../utils/apiError";
 import { showFieldError } from "../../../utils/formErrors";
 import FeaturedPeople, { warnUnmatchedMentions } from "./FeaturedPeople";
+import JournalImageField, { type PickedImage } from "../JournalImageField";
 import type { MentionSource } from "../../../components/richText/extensions";
 import type {
   Author,
@@ -174,7 +173,7 @@ const EditBlog = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm<JournalFormValues>();
 
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [cover, setCover] = useState<PickedImage | null>(null);
   const [content, setContent] = useState("");
   const [authors, setAuthors] = useState<Author[]>([]);
   const [categories, setCategories] = useState<JournalCategory[]>([]);
@@ -460,14 +459,7 @@ const EditBlog = () => {
       ).map(Number);
 
       if (blog.cover_image) {
-        setFileList([
-          {
-            uid: "-1",
-            name: "cover.png",
-            status: "done",
-            url: blog.cover_image,
-          },
-        ]);
+        setCover({ source: blog.cover_image });
       }
 
       // Existing downloads coming back from GetJournalById
@@ -569,8 +561,8 @@ const EditBlog = () => {
       }
 
       // Only append a new cover image if it was changed
-      if (fileList[0]?.originFileObj) {
-        formData.append("images", fileList[0].originFileObj!);
+      if (cover?.file) {
+        formData.append("images", cover.file);
       }
 
       // Existing downloads — title/description/button text updates, plus
@@ -1048,68 +1040,7 @@ const EditBlog = () => {
           title="Cover image"
           hint="Shown as the thumbnail in journal listings"
         >
-          <div className={styles.coverUploadArea}>
-            <div className={styles.coverPreview}>
-              {fileList.length > 0 ? (
-                <img
-                  src={
-                    fileList[0].originFileObj
-                      ? URL.createObjectURL(fileList[0].originFileObj)
-                      : fileList[0].url
-                  }
-                  alt="Cover preview"
-                />
-              ) : (
-                <div className={styles.coverEmpty}>
-                  <PictureOutlined style={{ fontSize: 22 }} />
-                  <span>No image selected</span>
-                </div>
-              )}
-            </div>
-
-            <div className={styles.coverActions}>
-              <ImgCrop
-                aspect={16 / 9}
-                quality={1}
-                showGrid
-                rotationSlider
-                modalTitle="Crop cover image"
-                modalOk="Apply crop"
-                modalCancel="Cancel"
-              >
-                <Upload
-                  beforeUpload={(file) => {
-                    setFileList([
-                      {
-                        uid: file.uid,
-                        name: file.name,
-                        status: "done",
-                        originFileObj: file,
-                      },
-                    ]);
-                    return false;
-                  }}
-                  fileList={[]}
-                  showUploadList={false}
-                  maxCount={1}
-                >
-                  <Button icon={<UploadOutlined />}>
-                    {fileList.length > 0 ? "Replace image" : "Upload image"}
-                  </Button>
-                </Upload>
-              </ImgCrop>
-
-              {fileList.length > 0 && (
-                <Button danger type="text" onClick={() => setFileList([])}>
-                  Remove image
-                </Button>
-              )}
-
-              <span className={styles.coverHelp}>
-                Recommended ratio 16:9. JPG or PNG.
-              </span>
-            </div>
-          </div>
+          <JournalImageField kind="cover" value={cover} onChange={setCover} />
         </SectionCard>
 
         {/* DOWNLOADS */}

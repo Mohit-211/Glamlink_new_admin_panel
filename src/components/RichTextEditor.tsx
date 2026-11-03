@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import type { ChainedCommands, EditorEvents } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
-import type { EditorState } from "@tiptap/pm/state";
+import { NodeSelection, type EditorState } from "@tiptap/pm/state";
 import {
   Button,
   Checkbox,
@@ -36,6 +36,7 @@ import {
   OrderedListOutlined,
   PictureOutlined,
   RedoOutlined,
+  ScissorOutlined,
   TableOutlined,
   TagsOutlined,
   UnderlineOutlined,
@@ -45,13 +46,16 @@ import {
   VideoCameraAddOutlined,
 } from "@ant-design/icons";
 import {
+  buildArticleExtensions,
   buildExtensions,
+  toArticleHeadings,
   TOPIC_BLOCK_TYPES,
   type MentionItem,
   type MentionOptions,
   type MentionSource,
 } from "./richText/extensions";
 import { sanitizeHtml } from "../utils/sanitizeHtml";
+import { useImageCrop, type ImageCropOptions, type ImageCropResult } from "./ImageCropDialog";
 import "./RichTextEditor.scss";
 
 const FONT_FAMILIES = [
@@ -69,6 +73,8 @@ const BLOCKS = [
 ];
 // The website's bio editor allows paragraphs and h3 only (the API cleans to that list).
 const SIMPLE_BLOCKS = BLOCKS.filter((b) => b.value === "p" || b.value === "h3");
+// An education article allows paragraphs, h2 and h3.
+const ARTICLE_BLOCKS = BLOCKS.filter((b) => ["p", "h2", "h3"].includes(b.value));
 const TAGGED_CLASS = "topic-tagged-paragraph";
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -93,6 +99,14 @@ export interface RichTextEditorProps {
    * the API cleans to that list, such as an access card's bio.
    */
   simple?: boolean;
+  /**
+   * What the API keeps in an education article (glamlink-backend articleHtml.js), and nothing
+   * else: h2 and h3 headings, paragraphs, bold, italic, bullet and numbered lists, quotes,
+   * links, and pictures (uploaded through `uploadMedia`, cropped first). No underline, strike,
+   * fonts, colours, alignment, tables, video, HTML source or topics; content outside that list
+   * is dropped when loaded or pasted. Wins over `full` and `simple`.
+   */
+  article?: boolean;
   /** Shows a character counter (text only, not markup) against this limit. */
   maxLength?: number;
   uploadMedia?: (file: File, options: UploadMediaOptions) => Promise<string>;
@@ -143,14 +157,23 @@ const newParagraphId = (doc: PMNode) => {
   return id;
 };
 
-const pickFile = (accept: string) =>
-  new Promise<File | null>((resolve) => {
+const pickFiles = (accept: string, multiple = false) =>
+  new Promise<File[]>((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = accept;
-    input.onchange = () => resolve(input.files?.[0] || null);
+    input.multiple = multiple;
+    input.onchange = () => resolve(Array.from(input.files || []));
     input.click();
   });
+
+// Stored and pasted HTML is sanitized on the way in: the editor renders it live.
+// An article's headings also become the h2 and h3 it allows.
+const cleanHtml = (html: string | null | undefined, article: boolean) =>
+  article ? toArticleHeadings(sanitizeHtml(html)) : sanitizeHtml(html);
+
+// Pictures in the text: their own shape, a preset, Free, Custom, or "Use as is".
+const BODY_CROP: ImageCropOptions = { ratios: ["16:9", "4:3", "1:1", "4:5"], allowSkip: true, okText: "Insert" };
 
 /**
  * The app's single rich-text editor (Tiptap). `value` is an HTML string and
@@ -159,7 +182,10 @@ const pickFile = (accept: string) =>
  *
  * Optional features:
  *  - `full`:        fonts, colours, alignment, images and video
- *  - `uploadMedia`: (file, { onProgress, signal }) => Promise<url>, used for images/video
+ *  - `article`:     an education article's formatting only, with images (see the prop)
+ *  - `uploadMedia`: (file, { onProgress, signal }) => Promise<url>, used for images/video;
+ *                   a picture is cropped (or kept as is) before it is uploaded, and one
+ *                   already in the text can be selected and cropped again
  *  - `mentions`:    { search(query), toLink(id) } enables "@" business tags
  *  - `topics`:      [{ id, name }] enables tagging a paragraph with topics
  */
@@ -167,18 +193,24 @@ const RichTextEditor = ({
   value,
   onChange,
   height = 300,
-  full = false,
-  simple = false,
+  full: fullProp = false,
+  simple: simpleProp = false,
+  article = false,
   maxLength,
   uploadMedia,
   mentions,
-  topics,
+  topics: topicsProp,
 }: RichTextEditorProps) => {
+  // Article mode is a fixed list, so it wins over the others.
+  const full = fullProp && !article;
+  const simple = simpleProp && !article;
+  const topics = article ? undefined : topicsProp;
   const [fullscreen, setFullscreen] = useState(false);
   const [source, setSource] = useState<string | null>(null); // HTML being edited in source view
   const [linkModal, setLinkModal] = useState<{ href: string; newTab: boolean } | null>(null);
   const [topicModal, setTopicModal] = useState<{ pos: number; selected: number[]; search: string } | null>(null);
   const [mentionUi, setMentionUi] = useState<MentionUi | null>(null);
+  const [cropImage, cropDialog] = useImageCrop();
   const mentionState = useRef<{ items: MentionItem[]; index: number; command: ((item: MentionItem) => void) | null }>({
     items: [],
     index: 0,
@@ -231,14 +263,13 @@ const RichTextEditor = ({
   };
 
   const editor = useEditor({
-    extensions: buildExtensions(() => optionsRef.current ?? {}),
-    // Stored and pasted HTML is sanitized on the way in: the editor renders it live.
-    content: sanitizeHtml(value),
+    extensions: article ? buildArticleExtensions() : buildExtensions(() => optionsRef.current ?? {}),
+    content: cleanHtml(value, article),
     shouldRerenderOnTransaction: true,
     onUpdate: ({ editor: ed }) => onChangeRef.current?.(ed.isEmpty ? "" : ed.getHTML()),
     // These handlers are captured once at creation, so they go through the ref.
     editorProps: {
-      transformPastedHTML: (html) => sanitizeHtml(html),
+      transformPastedHTML: (html) => cleanHtml(html, article),
       handlePaste: (view, event) =>
         optionsRef.current?.insertDroppedImages(event.clipboardData?.files, null),
       handleDrop: (view, event) => {
@@ -252,45 +283,109 @@ const RichTextEditor = ({
   useEffect(() => {
     if (!editor) return;
     const current = editor.isEmpty ? "" : editor.getHTML();
-    if ((value || "") !== current) editor.commands.setContent(sanitizeHtml(value), { emitUpdate: false });
-  }, [editor, value]);
+    if ((value || "") !== current) editor.commands.setContent(cleanHtml(value, article), { emitUpdate: false });
+  }, [editor, value, article]);
 
   // ---- media upload ----
-  const uploadImage = async (file: File, pos: number | null) => {
-    if (!uploadMedia) return;
+  // Keeps a document position pointing at the same spot while the admin keeps typing
+  // (dialogs and uploads take a while). Call stop() when done.
+  const follow = (start: number) => {
+    const at = { pos: start, stop: () => editor.off("transaction", track) };
+    const track = ({ transaction }: EditorEvents["transaction"]) => {
+      at.pos = transaction.mapping.map(at.pos);
+    };
+    editor.on("transaction", track);
+    return at;
+  };
+
+  // Each picture goes through the crop dialog in turn; then they are uploaded and inserted
+  // together, in order, at `pos` (where they were dropped) or the cursor. Cancel inserts none.
+  const insertImages = async (files: File[], pos: number | null) => {
+    if (!uploadMedia || !files.length) return;
+    const at = follow(pos ?? editor.state.selection.from);
     const key = `image-upload-${Date.now()}`;
-    message.loading({ key, content: `Uploading ${file.name}...`, duration: 0 });
     try {
-      const url = await uploadMedia(file, {});
-      const at = pos ?? editor.state.selection.from;
-      editor.chain().focus().insertContentAt(at, { type: "image", attrs: { src: url, alt: file.name } }).run();
-      message.destroy(key);
-    } catch (err) {
-      console.error("Image upload failed:", err);
-      message.error({ key, content: "Image upload failed" });
+      const ready: File[] = [];
+      let rest = false;
+      for (const [index, file] of files.entries()) {
+        const result: ImageCropResult | null = rest
+          ? { file, asIs: true }
+          : await cropImage(file, { ...BODY_CROP, progress: { index, total: files.length } });
+        if (!result) return;
+        ready.push(result.file);
+        rest ||= Boolean(result.rest);
+      }
+      message.loading({ key, content: ready.length > 1 ? `Uploading ${ready.length} pictures...` : `Uploading ${ready[0].name}...`, duration: 0 });
+      const uploads = await Promise.allSettled(ready.map((file) => uploadMedia(file, {})));
+      const images = uploads.flatMap((u, i) => (u.status === "fulfilled" ? [{ type: "image", attrs: { src: u.value, alt: ready[i].name } }] : []));
+      if (images.length && !editor.isDestroyed) editor.chain().focus().insertContentAt(at.pos, images).run();
+      const failed = uploads.filter((u) => u.status === "rejected");
+      failed.forEach((u) => console.error("Image upload failed:", u.reason));
+      if (failed.length) message.error({ key, content: failed.length > 1 ? `${failed.length} pictures failed to upload` : "Image upload failed" });
+      else message.destroy(key);
+    } finally {
+      at.stop();
     }
   };
 
   function insertDroppedImages(files: FileList | undefined, pos: number | null) {
-    if (!uploadMedia || !full || !files?.length) return false;
+    if (!uploadMedia || !(full || article) || !files?.length) return false;
     const images = Array.from(files).filter((f) => f.type.startsWith("image/"));
     if (!images.length) return false;
-    images.forEach((file) => uploadImage(file, pos));
+    void insertImages(images, pos);
     return true;
   }
 
+  const selectedImage = () => {
+    const { selection } = editor.state;
+    return selection instanceof NodeSelection && selection.node.type.name === "image"
+      ? { node: selection.node, pos: selection.from }
+      : null;
+  };
+
+  // Crops a picture already in the text, starting from the stored file, and swaps in the upload.
+  // alt and the other attributes stay; a height set beside a width follows the new shape.
+  const recropImage = async () => {
+    const target = selectedImage();
+    if (!target || !uploadMedia) return;
+    const { src } = target.node.attrs;
+    const at = follow(target.pos);
+    const key = `image-crop-${Date.now()}`;
+    try {
+      const result = await cropImage(src, { ...BODY_CROP, allowSkip: false, okText: "Crop" });
+      if (!result) return;
+      message.loading({ key, content: "Uploading the cropped picture...", duration: 0 });
+      const url = await uploadMedia(result.file, {});
+      const node = editor.isDestroyed ? null : editor.state.doc.nodeAt(at.pos);
+      if (node?.type.name !== "image" || node.attrs.src !== src) {
+        message.warning({ key, content: "The picture was moved or removed meanwhile, so the crop wasn't applied" });
+        return;
+      }
+      const attrs: Record<string, unknown> = { ...node.attrs, src: url };
+      const width = Number(node.attrs.width);
+      if (width > 0 && Number(node.attrs.height) > 0 && result.size) {
+        attrs.height = Math.round((width * result.size.height) / result.size.width);
+      }
+      editor.chain().focus().command(({ tr }) => {
+        tr.setNodeMarkup(at.pos, undefined, attrs);
+        return true;
+      }).run();
+      message.destroy(key);
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      message.error({ key, content: "Image upload failed" });
+    } finally {
+      at.stop();
+    }
+  };
+
   const insertVideo = async () => {
-    const file = await pickFile("video/*");
+    const [file] = await pickFiles("video/*");
     if (!file || !uploadMedia) return;
     const sizeMB = file.size / (1024 * 1024);
     if (sizeMB > 100) message.warning("Large file — upload may take a while");
 
-    // Keep the insert position valid while the admin keeps typing.
-    let pos = editor.state.selection.from;
-    const track = ({ transaction }: EditorEvents["transaction"]) => {
-      pos = transaction.mapping.map(pos);
-    };
-    editor.on("transaction", track);
+    const at = follow(editor.state.selection.from);
     const controller = new AbortController();
     const key = "video-upload";
     const progress = (percent: number) =>
@@ -315,7 +410,7 @@ const RichTextEditor = ({
         editor
           .chain()
           .focus()
-          .insertContentAt(pos, {
+          .insertContentAt(at.pos, {
             type: "video",
             attrs: {
               src: url,
@@ -336,7 +431,7 @@ const RichTextEditor = ({
         message.error("Video upload failed");
       }
     } finally {
-      editor.off("transaction", track);
+      at.stop();
     }
   };
 
@@ -440,7 +535,7 @@ const RichTextEditor = ({
         {tool("Undo", <UndoOutlined />, () => editor.chain().focus().undo().run(), { disabled: !can.undo() })}
         {tool("Redo", <RedoOutlined />, () => editor.chain().focus().redo().run(), { disabled: !can.redo() })}
         {sep("s1")}
-        <Select size="small" style={{ width: 120 }} value={blockValue} options={simple ? SIMPLE_BLOCKS : BLOCKS} onChange={setBlock} disabled={source !== null} />
+        <Select size="small" style={{ width: 120 }} value={blockValue} options={article ? ARTICLE_BLOCKS : simple ? SIMPLE_BLOCKS : BLOCKS} onChange={setBlock} disabled={source !== null} />
         {full && (
           <>
             <Select
@@ -468,7 +563,7 @@ const RichTextEditor = ({
         {sep("s2")}
         {tool("Bold", <BoldOutlined />, () => editor.chain().focus().toggleBold().run(), { active: editor.isActive("bold") })}
         {tool("Italic", <ItalicOutlined />, () => editor.chain().focus().toggleItalic().run(), { active: editor.isActive("italic") })}
-        {tool("Underline", <UnderlineOutlined />, () => editor.chain().focus().toggleUnderline().run(), { active: editor.isActive("underline") })}
+        {!article && tool("Underline", <UnderlineOutlined />, () => editor.chain().focus().toggleUnderline().run(), { active: editor.isActive("underline") })}
         {simple && tool("Strikethrough", <StrikethroughOutlined />, () => editor.chain().focus().toggleStrike().run(), { active: editor.isActive("strike") })}
         {full && (
           <>
@@ -506,16 +601,14 @@ const RichTextEditor = ({
         {sep("s5")}
         {tool("Link", <LinkOutlined />, openLinkModal, { active: editor.isActive("link") })}
         {tool("Remove link", <DisconnectOutlined />, () => editor.chain().focus().extendMarkRange("link").unsetLink().run(), { disabled: !editor.isActive("link") })}
-        {full && uploadMedia && (
+        {(full || article) && uploadMedia && (
           <>
-            {tool("Image", <PictureOutlined />, async () => {
-              const file = await pickFile("image/*");
-              if (file) uploadImage(file, null);
-            })}
-            {tool("Video", <VideoCameraAddOutlined />, insertVideo)}
+            {tool("Image", <PictureOutlined />, async () => insertImages(await pickFiles("image/*", true), null))}
+            {tool("Crop the selected picture", <ScissorOutlined />, recropImage, { disabled: !selectedImage() })}
+            {full && tool("Video", <VideoCameraAddOutlined />, insertVideo)}
           </>
         )}
-        {!simple && (
+        {!simple && !article && (
         <Dropdown
           trigger={["click"]}
           disabled={source !== null}
@@ -560,7 +653,7 @@ const RichTextEditor = ({
         )}
         {sep("s7")}
         {tool("Clear formatting", <ClearOutlined />, () => editor.chain().focus().unsetAllMarks().clearNodes().run())}
-        {!simple && (
+        {!simple && !article && (
         <Tooltip title={source === null ? "Edit HTML source" : "Back to editor"}>
           <Button
             size="small"
@@ -691,6 +784,8 @@ const RichTextEditor = ({
           </>
         )}
       </Modal>
+
+      {cropDialog}
     </div>
   );
 };

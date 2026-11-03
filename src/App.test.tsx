@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import axios from "axios";
 import App from "./App";
 import { clearSession, setToken } from "./utils/session";
@@ -63,7 +63,7 @@ describe("App routing", () => {
   it("loads the profile and pending counts only once signed in", async () => {
     const get = vi.mocked(axios.get);
     const requested = (path: string) => get.mock.calls.some(([url]) => url.endsWith(path));
-    const paths = ["admin/profile", "form/getPendingFormCount", "directory/applications"];
+    const paths = ["admin/profile", "form/getPendingFormCount", "directory/applications", "directory/claims"];
 
     renderAt("/professionals");
     expect(screen.getByRole("button", { name: "SIGN IN" })).toBeInTheDocument();
@@ -72,6 +72,20 @@ describe("App routing", () => {
     act(() => setToken("test-token"));
     await screen.findByText("Access Management");
     expect(paths.filter(requested)).toEqual(paths);
+  });
+
+  it("opens Listing Claims from the sidebar, with the claims to verify as a badge", async () => {
+    localStorage.setItem("adminToken", "test-token");
+    vi.mocked(axios.get).mockImplementation(async (url) => ({
+      status: 200,
+      data: String(url).endsWith("directory/claims") ? { data: { count: 2, rows: [] } } : { data: [], rows: [] },
+    }));
+    renderAt("/directory-claims");
+
+    expect(await screen.findByRole("heading", { name: "Listing claims" })).toBeInTheDocument();
+    const entry = screen.getByText("Listing Claims").closest("li") as HTMLElement;
+    expect(entry).toHaveClass("ant-menu-item-selected");
+    expect(await within(entry).findByText("2")).toBeInTheDocument();
   });
 
   it("renders no page for a route that was removed", () => {

@@ -8,13 +8,10 @@ import {
 	Modal,
 	Form,
 	Input,
-	Upload,
 	Button,
 	type TableColumnsType,
-	type UploadFile,
-	type UploadProps,
 } from "antd";
-import { UploadOutlined, PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import {
 	GetAllAuthors,
 	UpdateAuthors,
@@ -23,6 +20,7 @@ import {
 } from "../../../services/Api/JournalApi";
 import { type WithIndex } from "../../../utils/table";
 import type { Author } from "../../../types/journal";
+import JournalImageField, { type PickedImage } from "../JournalImageField";
 
 const { Search } = Input;
 
@@ -33,7 +31,7 @@ const Authors = () => {
 
 	const [modalVisible, setModalVisible] = useState(false);
 	const [editingId, setEditingId] = useState<number | null>(null);
-	const [fileList, setFileList] = useState<UploadFile[]>([]);
+	const [photo, setPhoto] = useState<PickedImage | null>(null);
 
 	const [form] = Form.useForm();
 
@@ -154,7 +152,7 @@ const Authors = () => {
 	const openAddModal = () => {
 		setEditingId(null);
 		form.resetFields();
-		setFileList([]);
+		setPhoto(null);
 		setModalVisible(true);
 	};
 
@@ -169,29 +167,9 @@ const Authors = () => {
 			bio: record.bio,
 		});
 
-		setFileList(
-			record.profile_image
-				? [
-						{
-							uid: "-1",
-							name: "profile.png",
-							status: "done",
-							url: record.profile_image,
-						},
-					]
-				: [],
-		);
+		setPhoto(record.profile_image ? { source: record.profile_image } : null);
 
 		setModalVisible(true);
-	};
-
-	// ================= IMAGE =================
-
-	const handleFileChange: NonNullable<UploadProps["onChange"]> = ({ fileList: newFileList }) => {
-		setFileList(newFileList);
-
-		if (newFileList.length === 0) {
-		}
 	};
 
 	// ================= SUBMIT =================
@@ -205,9 +183,9 @@ const Authors = () => {
 			formData.append("designation", values.designation);
 			formData.append("bio", values.bio);
 
-			// If new file selected
-			if (fileList.length > 0 && fileList[0].originFileObj) {
-				formData.append("images", fileList[0].originFileObj);
+			// If a new photo was picked (cropped) or the saved one cropped again
+			if (photo?.file) {
+				formData.append("images", photo.file);
 			}
 
 			// If editing and no new file selected → DO NOT send profile_image
@@ -223,7 +201,7 @@ const Authors = () => {
 
 			setModalVisible(false);
 			form.resetFields();
-			setFileList([]);
+			setPhoto(null);
 			getData();
 		} catch (err) {
 			message.error("Something went wrong.");
@@ -292,15 +270,7 @@ const Authors = () => {
 					</Form.Item>
 
 					<Form.Item label="Profile Image">
-						<Upload
-							fileList={fileList}
-							beforeUpload={() => false}
-							onChange={handleFileChange}
-							listType="picture"
-							maxCount={1}
-						>
-							<Button icon={<UploadOutlined />}>Upload Image</Button>
-						</Upload>
+						<JournalImageField kind="author" value={photo} onChange={setPhoto} />
 					</Form.Item>
 				</Form>
 			</Modal>
