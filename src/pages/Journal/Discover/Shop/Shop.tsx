@@ -245,6 +245,31 @@ const Shop = () => {
       ),
     },
     {
+      // Shown top-left on the product's card and page; only admins can set an editorial one.
+      title: "Tag",
+      dataIndex: "tag",
+      width: 180,
+      render: (tag: Shop["tag"]) =>
+        tag ? (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            <Tag style={{ marginInlineEnd: 0 }}>{tag.name}</Tag>
+            {tag.is_editorial && (
+              <Tag color="magenta" style={{ marginInlineEnd: 0 }}>
+                Editorial
+              </Tag>
+            )}
+          </div>
+        ) : (
+          "-"
+        ),
+    },
+    {
+      title: "Category",
+      dataIndex: "category",
+      width: 160,
+      render: (category: Shop["category"]) => (category ? <Tag style={{ marginInlineEnd: 0 }}>{category}</Tag> : "-"),
+    },
+    {
       title: "Price",
       dataIndex: "price",
       width: 120,
@@ -524,6 +549,8 @@ const Shop = () => {
                 row: DraggableRow,
               },
             }}
+            // With the Tag and Category columns it is wider than most screens: it scrolls sideways, as the Journals list does.
+            scroll={{ x: "max-content" }}
             pagination={{
               pageSize: 50,
               showSizeChanger: false,

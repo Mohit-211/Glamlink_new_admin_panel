@@ -134,6 +134,7 @@ const menuItems = (counts: PendingCounts): MenuItem[] => [
       { key: "/education", icon: <BookOutlined />, label: "Education" },
       { key: "/events", icon: <CalendarOutlined />, label: "Events" },
       { key: "/shop", icon: <ShoppingOutlined />, label: "Shop" },
+      { key: "/shop/tags", icon: <TagOutlined />, label: "Product Tags" },
       { key: "/journal-topics", icon: <TagsOutlined />, label: "Topics" },
       { key: "/journal-faqs", icon: <QuestionCircleOutlined />, label: "FAQs" },
     ],

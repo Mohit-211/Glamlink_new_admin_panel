@@ -30,7 +30,7 @@ import { apiErrorMessage, apiErrorStatus } from "../../../../utils/apiError";
 import { showFieldError } from "../../../../utils/formErrors";
 import ProductSiteFields, { appendProductSiteFields, productSiteValues } from "./ProductSiteFields";
 import { useIdParam } from "../../../../utils/routing";
-import type { JournalTopic } from "../../../../types/journal";
+import type { JournalTopic, Shop } from "../../../../types/journal";
 
 const EditShop = () => {
   const id = useIdParam();
@@ -38,6 +38,8 @@ const EditShop = () => {
   const [form] = Form.useForm();
 
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  // As loaded: its category and tag show even when the lists lack them.
+  const [product, setProduct] = useState<Shop | null>(null);
 
   // ==========================
   // Topics
@@ -70,6 +72,7 @@ const EditShop = () => {
         status: shop.status || "draft",
         ...productSiteValues(shop),
       });
+      setProduct(shop);
 
       if (shop.cover_image) {
         setFileList([
@@ -368,7 +371,7 @@ const EditShop = () => {
             </Select>
           </Form.Item>
 
-          <ProductSiteFields isNew={false} />
+          <ProductSiteFields isNew={false} product={product} />
 
           {/* ==========================
               TOPICS

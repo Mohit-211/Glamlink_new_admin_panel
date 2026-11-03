@@ -1,0 +1,42 @@
+/* ---------- list ---------- */
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin: 4px 4px 12px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.muted {
+  color: var(--color-text-tertiary);
+}
+
+// A row drags from anywhere but its controls.
+.row {
+  cursor: grab;
+}
+
+// Where a dragged tag lands.
+.dropTarget {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.dragHandle {
+  color: var(--color-text-tertiary);
+}
+
+.name {
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}

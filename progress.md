@@ -2,8 +2,8 @@
 
 Tracks the work done against the code and dependency audit of the admin panel, taken at commit `4ebfc15` on `main` on Oct 15. The [audit doc](https://claude.ai/code/artifact/e5486df6-a77d-4fd4-abc6-0030334b5224) now holds the Oct 30 re-audit of `d681084` (see [Oct 30 audit](#oct-30-audit)); the Oct 15 version is in its history.
 
-- **Branch:** `main`. Pass 10 is `b75b38b`, followed by `ed32708`, which only changes line endings to LF; passes 1–9 end at `2970239`. `main` is at `d681084` (Oct 28; the last two commits only touch this file). Pass 10 is live on admin.glamlink.net (built Oct 27), on the new API. Passes 11 (Nov 1–2) and 12 (Nov 3) are on `main` (committed Nov 4) and not deployed: they need the backend's Nov 1 and Nov 3 changes, which deploy first (see [pass 11](#11-access-orders-listing-claims-and-card-types-nov-12) and [pass 12](#12-profile-pages-and-journal-cropping-nov-3)).
-- **Status as of:** 2026-11-03 for passes 11 and 12; the rest as of 2026-10-30.
+- **Branch:** `main`. Pass 10 is `b75b38b`, followed by `ed32708`, which only changes line endings to LF; passes 1–9 end at `2970239`. `main` ends with pass 13 (Nov 4). Pass 10 is live on admin.glamlink.net (built Oct 27), on the new API. Passes 11 (Nov 1–2) and 12 (Nov 3) are on `main` (committed Nov 4), pushed and deployed (see [pass 11](#11-access-orders-listing-claims-and-card-types-nov-12) and [pass 12](#12-profile-pages-and-journal-cropping-nov-3)). Pass 13 (Nov 4) is on `main` too, pushed and not deployed: it needs the backend's product tags, which deploy first (see [pass 13](#13-product-tags-categories-and-the-button-label-nov-4)).
+- **Status as of:** 2026-11-04 for pass 13; 2026-11-03 for passes 11 and 12; the rest as of 2026-10-30.
 - **Backend questions:** the security questions in [Admin panel security: backend changes and questions](https://claude.ai/code/artifact/7cf1fb80-6241-4282-b8a6-9966c6290ed9) were all answered on Oct 16, and the panel made its changes in pass 9. Items 4–7 there still stand; its Oct 30 status note lists them.
 - **Backend requests (pass 10):** [Glamlink Backend Requests — Admin Panel](https://claude.ai/artifact/Qb8i2fdiYQAN6TNMUG86KY): what the backend should change, with a status per row (the findings table in pass 10, kept up to date there).
 - **Not yet done:** a manual pass in a real browser. Pass 10 runs against the new API on admin.glamlink.net, but there is no record of anyone clicking through it. The Oct 30 audit found P0 and P1 bugs that such a pass would likely hit, so do it after those fixes (see [Oct 30 audit](#oct-30-audit)).
@@ -16,12 +16,12 @@ Tracks the work done against the code and dependency audit of the admin panel, t
 | `npm audit` | 143 advisories (4 critical, 45 high) | 0 |
 | Packages in lockfile | 1,739 | 362 (the count `npm audit` checks) |
 | Direct dependencies | 41 (no dev dependencies) | 27 + 14 dev (`react-image-crop` added Nov 3); 2 unused (`papaparse`, `@types/papaparse`) |
-| Production JS | 6.2 MB (1.62 MB gzipped), one file | 2.99 MB (914 KB gzipped) in the main file (2.91 MB, 891 KB on Oct 30) |
+| Production JS | 6.2 MB (1.62 MB gzipped), one file | 3.00 MB (917 KB gzipped) in the main file with pass 13 (2.99 MB, 914 KB before it; 2.91 MB, 891 KB on Oct 30) |
 | UI kits / icon sets | 5 / 5 | 1 / 1 (antd, `@ant-design/icons`) |
 | Jobs done by two or more libraries | 10 | 1 since Nov 3: image cropping (`antd-img-crop` on most screens; `react-image-crop` for the Journal's free crop, which `antd-img-crop` can't do) |
 | Routes unreachable from the UI | 29 | 0 (deleted) |
 | `console.*` calls | 320 (including credential logging) | 111 in the source, all `console.error`; none in production builds |
-| Tests | None | 245 in 44 files (Vitest; 170 in 36 before pass 12, 153 in 32 before pass 11) |
+| Tests | None | 267 in 48 files (Vitest; 245 in 44 before pass 13, 170 in 36 before pass 12, 153 in 32 before pass 11) |
 | Lint | ESLint (CRA): 51 hook-dependency and 14 anchor warnings | oxlint: 0 errors; 16 warnings (14 hook deps, 1 anchor, 1 missing key), all in older files |
 | Colour literals outside the global stylesheet | 876 in 71 files (266 distinct values) | 0, enforced by a test; card-data swatches excepted |
 | Language | JavaScript | TypeScript, `strict` mode, 0 type errors; the build fails on a type error |
@@ -72,7 +72,7 @@ Add a regression test with each fix: 14 page areas have no tests, and every P1 f
 
 ## Work done
 
-Eleven passes, in order. Each pass was verified with a production build before the next one started.
+Thirteen passes, in order. Each pass was verified with a production build before the next one started.
 
 ### 1. One job, one library
 
@@ -355,6 +355,21 @@ For the backend's Nov 3 changes (its `docs/handoff/admin-panel.md`, the Nov 3 ro
 - **Leftovers of Nov 1–2:** special offers left the Access pricing settings, and analytics no longer says "not built yet" (A-29, part: "Priority placement in search" stays, marked not built); an order's details show its refund (full or partial), dispute and cancellation.
 - **Tests:** a tear-down wait in `setupTests.ts`: React's scheduler could still have a task queued when a file's last test ended, which failed about one run in two with "window is not defined" once the suite grew.
 - **Checks:** 245 tests in 44 files pass (170 in 36 before), three full runs clean; 0 type errors; oxlint 0 errors with the 16 older warnings; `npm run build` passes.
+
+### 13. Product tags, categories and the button label (Nov 4)
+
+For Mohit's decisions of Nov 4 and the contract written for them, which the backend builds at the same time: a product carries one tag, shown top-left on its card and its page, from a list admins keep; it has one of 8 categories; and its button can be renamed ("Shop now" when empty). Built against the contract, not a running API. On `main` (committed Nov 4) and not deployed: the API deploys first.
+
+- **Product Tags**, a new screen (`/shop/tags`, in the sidebar after Shop): the tags in their order, each with an Editorial switch; add (a name of at most 40 characters, editorial or not), rename, reorder (drag or arrows, every id saved at once, as on the profile tabs), delete (the confirmation says the products carrying it lose the tag; the message after says how many did). A taken name (409 `TAG_EXISTS`) and a refused one (400 `INVALID_TAG`) show on the name field. One line says what editorial means: only admins can set it, so owners can't claim a feature they didn't get.
+- **Add and Edit product** (in `ProductSiteFields`, so both forms):
+  - **Category:** "No category" and the 8, in the website's order. A value saved before the list shows, marked "(not in the list)", and is left out of the save so it stays until another is picked: the API refuses anything but the 8.
+  - **Tag:** "No tag" and every tag from `GET /discover/shop/tags`, the editorial ones marked (in the list and once chosen). The product's own tag still shows when the list can't load.
+  - **Button label:** at most 30 characters, "Shop now" as the placeholder; empty means "Shop now".
+  - Each is sent as the contract says, `""` clearing it; a refusal naming one of them shows on its field.
+- **Product list:** Tag (editorial ones marked) and Category columns; the table now scrolls sideways, as the Journals list does.
+- **Shared pieces:** `types/productTag.ts` and `services/Api/ProductTagsApi.ts`; the screen reuses the profile tabs' order saver (`ProfilePages/pageContent.ts`).
+- **For the backend:** accept a product's unchanged category from before the list on save (the panel leaves it out; a form that sends it back gets a 400 on any edit); answer a `tag_id` that no longer exists with 400 `INVALID_PRODUCT` on `tag_id`, not a foreign-key 500; decide what making an open tag editorial does to the owners who set it (they can't change or clear it after: 403); put a new tag last in the order; map the CSV import's `merchant_category` onto the 8.
+- **Checks:** 267 tests in 48 files pass (245 in 44 before; new: the tags screen, Add and Edit product, the product list, the sidebar entry, and what the fields send), 0 type errors, oxlint 0 errors with the 16 older warnings, and `npm run build` passes.
 
 ## Status against the audit
 

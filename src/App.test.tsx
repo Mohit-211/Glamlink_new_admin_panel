@@ -88,6 +88,17 @@ describe("App routing", () => {
     expect(await within(entry).findByText("2")).toBeInTheDocument();
   });
 
+  it("opens Product Tags from the sidebar, right after Shop", async () => {
+    localStorage.setItem("adminToken", "test-token");
+    renderAt("/shop/tags");
+
+    expect(await screen.findByRole("heading", { name: "Product tags" })).toBeInTheDocument();
+    const entry = screen.getByText("Product Tags").closest("li") as HTMLElement;
+    expect(entry).toHaveClass("ant-menu-item-selected");
+    expect(entry.previousElementSibling).toHaveTextContent("Shop");
+    expect(entry.previousElementSibling).not.toHaveClass("ant-menu-item-selected");
+  });
+
   it("renders no page for a route that was removed", () => {
     localStorage.setItem("adminToken", "test-token");
     renderAt("/blogs");

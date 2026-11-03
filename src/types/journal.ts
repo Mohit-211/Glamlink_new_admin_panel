@@ -1,6 +1,7 @@
 import type { UploadFile } from "antd";
 import type { Dayjs } from "dayjs";
 import type { BusinessCard } from "./businessCard";
+import type { ProductTagRef } from "./productTag";
 
 /** Values of the Add/Edit journal form (content and downloads live in component state). */
 export interface JournalFormValues {
@@ -168,6 +169,12 @@ export interface Shop extends DiscoverItem {
   is_featured?: boolean;
   featured_order?: number;
   journal_topics?: { id: number }[];
+  /** One of the shop's eight categories, by its label; a value saved before the list stays until edited. */
+  category?: string | null;
+  /** Shown top-left on the product's card and page. */
+  tag?: ProductTagRef | null;
+  /** The product's button; null: "Shop now". */
+  button_label?: string | null;
 }
 
 export interface JournalFaq {

@@ -39,6 +39,7 @@ import EditEvent from "./pages/Journal/Discover/Event/EditEvent";
 import Shop from "./pages/Journal/Discover/Shop/Shop";
 import AddShop from "./pages/Journal/Discover/Shop/AddShop";
 import EditShop from "./pages/Journal/Discover/Shop/EditShop";
+import ProductTags from "./pages/Journal/Discover/Shop/ProductTags";
 import AccessOrders from "./pages/BusinessCard/AccessOrders";
 import Ads from "./pages/Ads/AdsList";
 import AddAd from "./pages/Ads/AddAd";
@@ -127,6 +128,7 @@ function App() {
           <Route path="/add-event" element={<AddEvent />} />
           <Route path="/edit-event/:id" element={<EditEvent />} />
           <Route path="/shop" element={<Shop />} />
+          <Route path="/shop/tags" element={<ProductTags />} />
           <Route path="/add-shop" element={<AddShop />} />
           <Route path="/edit-shop/:id" element={<EditShop />} />
           <Route path="/directory" element={<Directroy />} />
