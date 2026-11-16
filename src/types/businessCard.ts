@@ -164,6 +164,12 @@ export interface PurchaseInfo {
 /** "cancelled" comes only from cancelling the order (CancelAccessOrder), never from the fulfillment form. */
 export type FulfillmentStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
 
+/**
+ * The shipping the buyer chose at checkout: Standard or Expedited (each one Shippo's rate that day), or the flat or free
+ * price the shipping settings set.
+ */
+export type ShippingOptionId = "standard" | "expedited" | "flat" | "free";
+
 /** A paid access-card order (NFC keychain and/or subscription). */
 export interface AccessOrder {
   id: number;
@@ -189,15 +195,19 @@ export interface AccessOrder {
   shipping_state?: string | null;
   shipping_postal_code?: string | null;
   shipping_country?: string | null;
+  /** The recipient's phone, for the carriers that want one. */
+  shipping_phone?: string | null;
   business_card?: { business_card_link?: string | null } | null;
   /** The buyer's account. */
   user_id?: number | null;
-  /** The carrier and service chosen at checkout, then those of the label bought. */
+  /** The option chosen at checkout; none on orders paid before Nov 16, when buyers picked a carrier's service. */
+  shipping_option?: ShippingOptionId | null;
+  /** The carrier and service behind the option chosen at checkout, then those of the label bought. */
   carrier?: string | null;
   service?: string | null;
-  /** The Shippo rate chosen at checkout; none when shipping was flat or free. */
+  /** The Shippo rate behind the option chosen at checkout; none when shipping was flat or free. */
   shippo_rate_id?: string | null;
-  /** Set while the order has a label. */
+  /** Set while the order has a label, or one Shippo is still making (no `label_url` yet). */
   shippo_transaction_id?: string | null;
   /** The label's PDF, to print. */
   label_url?: string | null;

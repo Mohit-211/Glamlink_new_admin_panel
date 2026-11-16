@@ -13,7 +13,7 @@ import type {
 } from "../../types/video";
 
 // Watch: video series and their videos. A refusal is 400 INVALID_VIDEO with `details.field`; a missing video or series
-// is 404 NOT_FOUND. Calls that reach YouTube can answer 503 YOUTUBE_NOT_CONFIGURED (the server has no key) or 502
+// is 404 NOT_FOUND. Calls that reach YouTube can answer 503 YOUTUBE_NOT_CONFIGURED (the server has no key) or 503
 // YOUTUBE_UNAVAILABLE.
 
 type Id = number | string;

@@ -321,9 +321,14 @@ export interface ShippingRate {
   duration_terms: string | null;
   /** Shippo's tags: CHEAPEST, FASTEST, BESTVALUE. */
   attributes: string[];
+  /** The option this rate would be on the website today; null for the rest. */
+  option?: "standard" | "expedited" | null;
 }
 
-/** GET /businessCard/access-orders/:id/rates: today's rates for the order's parcel, cheapest first. */
+/**
+ * GET /businessCard/access-orders/:id/rates: today's rates for the order's parcel, cheapest first, without the ones a
+ * keychain may not ship by (USPS Media Mail).
+ */
 export interface OrderRates {
   order_id: number;
   shipment_id: string;

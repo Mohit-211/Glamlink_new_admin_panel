@@ -48,6 +48,7 @@ import type {
   AccessOrderListParams,
   FulfillmentStatus,
   FulfillmentUpdate,
+  ShippingOptionId,
 } from "../../types/businessCard";
 import type { ShippingRate } from "../../types/access";
 
@@ -324,8 +325,19 @@ const REFUND_WORDS: Partial<Record<string, string>> = {
   ERROR: "Shippo couldn't refund it; check Shippo's dashboard",
 };
 
-/** The order has a label (bought and not voided). */
+/** The order has a label (bought and not voided), or Shippo is still making one. */
 const hasLabel = (order: AccessOrder) => Boolean(order.shippo_transaction_id);
+
+/** Shippo took the purchase but hasn't made the label yet: no file and no tracking until it has. */
+const labelPending = (order: AccessOrder) => hasLabel(order) && !order.label_url;
+
+/** The shipping chosen at checkout, as the website named it. */
+const OPTION_NAMES: Record<ShippingOptionId, string> = {
+  standard: "Standard Shipping",
+  expedited: "Expedited Shipping",
+  flat: "Standard Shipping (flat price)",
+  free: "Free shipping",
+};
 
 /** The parcel is moving (Shippo's tracking, or marked by hand): no voiding its label, no new one. */
 const isOnItsWay = (order: AccessOrder) =>
@@ -336,8 +348,8 @@ const carrierAndService = (order: AccessOrder) => [order.carrier, order.service]
 /** What "Buy label" buys when no rate is picked (the API's default). */
 const defaultRateText = (order: AccessOrder) =>
   order.shippo_rate_id
-    ? `the rate chosen at checkout${carrierAndService(order) ? ` (${carrierAndService(order)})` : ""}, or today's rate for the same service if that one has expired`
-    : "the cheapest rate today: shipping was flat or free at checkout, so the customer didn't pick a carrier";
+    ? `the rate chosen at checkout${carrierAndService(order) ? ` (${carrierAndService(order)})` : ""} while Shippo still sells it (a week), else today's rate for the same service`
+    : "today's standard rate: shipping was a flat price or free at checkout, so the customer didn't pick a service";
 
 const rateDays = (rate: ShippingRate) =>
   rate.estimated_days
@@ -348,16 +360,28 @@ interface LabelSectionProps {
   order: AccessOrder;
   onBuy: () => void;
   onVoid: () => Promise<void>;
+  /** Asks again after a label Shippo was still making. */
+  onCheck: () => Promise<void>;
 }
 
 /**
  * The order's label and tracking, with buying, printing and voiding the label. Only for orders that ship. A cancelled
  * order shows them for the record, with no buying or voiding: voiding here would put its fulfillment back to pending.
  */
-const LabelSection = ({ order, onBuy, onVoid }: LabelSectionProps) => {
+const LabelSection = ({ order, onBuy, onVoid, onCheck }: LabelSectionProps) => {
   const labelBought = hasLabel(order);
   const moving = isOnItsWay(order);
   const cancelled = isCancelled(order);
+  const [checking, setChecking] = useState(false);
+
+  const check = async () => {
+    setChecking(true);
+    try {
+      await onCheck();
+    } finally {
+      setChecking(false);
+    }
+  };
 
   return (
     <>
@@ -366,6 +390,10 @@ const LabelSection = ({ order, onBuy, onVoid }: LabelSectionProps) => {
       </div>
       <div className="ao-box">
         <div className="ao-info-grid ao-label-grid">
+          <div className="ao-info-item">
+            <div className="label">Shipping chosen</div>
+            <div className="value">{order.shipping_option ? OPTION_NAMES[order.shipping_option] : "—"}</div>
+          </div>
           <div className="ao-info-item">
             <div className="label">{labelBought ? "Carrier" : "Carrier chosen at checkout"}</div>
             <div className="value">{order.carrier || "—"}</div>
@@ -418,6 +446,15 @@ const LabelSection = ({ order, onBuy, onVoid }: LabelSectionProps) => {
               The order is cancelled. If its label is unused, void it in Shippo's dashboard for a refund.
             </div>
           )
+        ) : labelPending(order) ? (
+          <div className="ao-label-actions">
+            <Button type="primary" icon={<PrinterOutlined />} loading={checking} onClick={check}>
+              Check again
+            </Button>
+            <span className="ao-label-note">
+              Shippo is still making this label: its file and tracking come when it's done, usually within a minute.
+            </span>
+          </div>
         ) : labelBought ? (
           <div className="ao-label-actions">
             {order.label_url && (
@@ -475,9 +512,15 @@ interface BuyLabelModalProps {
   order: AccessOrder;
   onClose: () => void;
   onBought: (order: AccessOrder) => void;
-  /** The order already has a label (bought meanwhile): show it as it is now. */
+  /** The order already has a label (bought meanwhile, or still being made): show it as it is now. */
   onStale: () => void;
 }
+
+/**
+ * When the API's answer has no message, the server didn't answer in time (or Cloudflare stood in for it): Shippo may
+ * have made the label all the same.
+ */
+const NO_ANSWER = "Couldn't buy the label: the server didn't answer. Open the order again before retrying: the label may have been bought.";
 
 // Mounted only while open: each opening asks Shippo for today's rates.
 const BuyLabelModal = ({ order, onClose, onBought, onStale }: BuyLabelModalProps) => {
@@ -508,15 +551,18 @@ const BuyLabelModal = ({ order, onClose, onBought, onStale }: BuyLabelModalProps
       setBuying(true);
       setFailure(null);
       const res = await BuyAccessOrderLabel(order.id, choice === CHECKOUT_RATE ? undefined : choice);
-      message.success("Label bought. Print it from the order.");
-      onBought(res.data.data);
+      const bought = res.data.data;
+      if (bought.label_url) message.success("Label bought. Print it from the order.");
+      else message.info("Shippo is still making the label. Check again from the order in a minute.");
+      onBought(bought);
     } catch (err) {
-      if (apiErrorCode(err) === "LABEL_EXISTS") {
+      const code = apiErrorCode(err);
+      if (code === "LABEL_EXISTS" || code === "LABEL_PENDING") {
         message.warning(apiErrorMessage(err) || "This order already has a label");
         onStale();
       } else {
-        // LABEL_FAILED carries Shippo's reasons in its message; NOTHING_TO_SHIP and NO_SHIPPING_RATES say what's wrong.
-        setFailure(apiErrorMessage(err) || "Couldn't buy the label");
+        // LABEL_FAILED carries Shippo's reasons; SHIPPO_UNAVAILABLE, NOTHING_TO_SHIP and NO_SHIPPING_RATES say what's wrong.
+        setFailure(apiErrorMessage(err) || NO_ANSWER);
       }
     } finally {
       setBuying(false);
@@ -524,6 +570,7 @@ const BuyLabelModal = ({ order, onClose, onBought, onStale }: BuyLabelModalProps
   };
 
   const checkoutService = carrierAndService(order);
+  const optionName = order.shipping_option ? OPTION_NAMES[order.shipping_option] : null;
 
   return (
     <Modal
@@ -559,13 +606,13 @@ const BuyLabelModal = ({ order, onClose, onBought, onStale }: BuyLabelModalProps
         <Radio value={CHECKOUT_RATE}>
           <div className="ao-rate-title">
             {order.shippo_rate_id
-              ? `The rate chosen at checkout${checkoutService ? `: ${checkoutService}` : ""}`
-              : "The cheapest rate today"}
+              ? `The rate chosen at checkout${checkoutService ? `: ${checkoutService}` : ""}${optionName ? ` (${optionName})` : ""}`
+              : "Today's standard rate"}
           </div>
           <div className="ao-label-note">
             {order.shippo_rate_id
-              ? "If it has expired, today's rate for the same service is bought."
-              : "Shipping was flat or free at checkout, so the customer didn't pick a carrier."}
+              ? "Once Shippo no longer sells it (after a week), today's rate for the same service is bought."
+              : "Shipping was a flat price or free at checkout, so the customer didn't pick a service."}
           </div>
         </Radio>
         {rates === null ? (
@@ -578,6 +625,7 @@ const BuyLabelModal = ({ order, onClose, onBought, onStale }: BuyLabelModalProps
               </div>
               <div className="ao-label-note">
                 {rateDays(rate)}{" "}
+                {rate.option && <Tag color="purple">{OPTION_NAMES[rate.option]} today</Tag>}
                 {rate.attributes.map((tag) => (RATE_TAGS[tag] ? <Tag key={tag}>{RATE_TAGS[tag]}</Tag> : null))}
                 {rate.provider === order.carrier && rate.service === order.service && (
                   <Tag color="blue">Chosen at checkout</Tag>
@@ -777,6 +825,23 @@ const AccessOrders = () => {
       message.error(apiErrorMessage(e) || "Couldn't void the label");
       const code = apiErrorCode(e);
       if (code === "LABEL_IN_USE" || code === "NO_LABEL") reloadOrder(order.id);
+    }
+  };
+
+  // A label Shippo was still making: asking for it again picks it up once done (the API buys nothing more).
+  const checkLabel = async (order: AccessOrder) => {
+    try {
+      const res = await BuyAccessOrderLabel(order.id);
+      showOrder(res.data.data);
+      if (res.data.data.label_url) message.success("The label is ready. Print it from the order.");
+      else message.info("Shippo is still making the label. Check again in a minute.");
+    } catch (e) {
+      if (apiErrorCode(e) === "LABEL_PENDING") {
+        message.info(apiErrorMessage(e) || "Shippo is still making the label. Check again in a minute.");
+      } else {
+        message.error(apiErrorMessage(e) || "Couldn't reach the server. Try again in a moment.");
+        reloadOrder(order.id);
+      }
     }
   };
 
@@ -1160,6 +1225,7 @@ const AccessOrders = () => {
                     order={selectedOrder}
                     onBuy={() => setBuyingLabelFor(selectedOrder)}
                     onVoid={() => voidLabel(selectedOrder)}
+                    onCheck={() => checkLabel(selectedOrder)}
                   />
 
                   {/* A cancelled order's fulfillment isn't changed by hand. */}

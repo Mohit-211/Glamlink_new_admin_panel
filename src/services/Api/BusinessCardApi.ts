@@ -86,9 +86,11 @@ export const GetAccessOrderRates = async (id: Id) => {
 };
 
 /**
- * Buys the order's label: `rateId` (one of today's rates), else the rate chosen at checkout, else today's rate for the
- * same service (or the cheapest). Answers the order, now processing, with its tracking number and `label_url`.
- * 409 LABEL_EXISTS; 502 LABEL_FAILED with Shippo's reasons in the message; 400 NOTHING_TO_SHIP or NO_SHIPPING_RATES.
+ * Buys the order's label: `rateId` (one of today's rates), else the rate chosen at checkout while Shippo sells it, else
+ * today's rate for the same service or option (else the standard one). Answers the order, now processing, with its
+ * tracking number and `label_url`; without them while Shippo is still making the label (asking again picks it up).
+ * 409 LABEL_EXISTS or LABEL_PENDING; 422 LABEL_FAILED with Shippo's reasons in the message; 503 SHIPPO_UNAVAILABLE
+ * (a label may have been made); 400 NOTHING_TO_SHIP or NO_SHIPPING_RATES.
  */
 export const BuyAccessOrderLabel = async (id: Id, rateId?: string) => {
   return axios.post<ApiResponse<AccessOrder>>(

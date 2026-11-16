@@ -197,8 +197,8 @@ describe("Access orders: shipping labels", () => {
     vi.mocked(axios.post).mockRejectedValue({
       isAxiosError: true,
       response: {
-        status: 502,
-        data: { message: "Shippo could not make the label: The address is not deliverable", code: "LABEL_FAILED" },
+        status: 422,
+        data: { message: "Shippo couldn't make the label: The address is not deliverable", code: "LABEL_FAILED" },
       },
     });
     renderAt("/access-orders/7");
@@ -207,9 +207,84 @@ describe("Access orders: shipping labels", () => {
     fireEvent.click(within(picker).getByRole("button", { name: /Buy label/ }));
 
     expect(
-      await within(picker).findByText("Shippo could not make the label: The address is not deliverable"),
+      await within(picker).findByText("Shippo couldn't make the label: The address is not deliverable"),
     ).toBeInTheDocument();
     expect(axios.post).toHaveBeenCalledWith(`${API}businessCard/access-orders/7/label`, {});
+  });
+
+  it("says a label may have been bought when the server doesn't answer (Cloudflare's own page, no message)", async () => {
+    answerGets({
+      "businessCard/access-orders": ordersList,
+      "businessCard/access-orders/7": keychainOrder,
+      "businessCard/access-orders/7/rates": { order_id: 7, shipment_id: "shp_1", rates: [] },
+    });
+    vi.mocked(axios.post).mockRejectedValue({ isAxiosError: true, response: { status: 504, data: "error code: 504" } });
+    renderAt("/access-orders/7");
+
+    const picker = await openRatePicker(await screen.findByRole("dialog"));
+    fireEvent.click(within(picker).getByRole("button", { name: /Buy label/ }));
+
+    expect(await within(picker).findByText(/the server didn't answer.*the label may have been bought/)).toBeInTheDocument();
+  });
+
+  it("names the shipping the customer chose, and which of today's rates is each option", async () => {
+    const expedited: AccessOrder = { ...keychainOrder, shipping_option: "expedited", carrier: "USPS", service: "Priority Mail" };
+    answerGets({
+      "businessCard/access-orders": { ...ordersList, data: [expedited, proOrder] },
+      "businessCard/access-orders/7": expedited,
+      "businessCard/access-orders/7/rates": {
+        order_id: 7,
+        shipment_id: "shp_1",
+        rates: [
+          { ...rate("rate_ga", "USPS", "Ground Advantage", 450, 4), option: "standard" },
+          { ...rate("rate_pm", "USPS", "Priority Mail", 900, 2), option: "expedited" },
+          { ...rate("rate_air", "UPS", "2nd Day Air", 1200, 2), option: null },
+        ],
+      },
+    });
+    renderAt("/access-orders/7");
+
+    const details = await screen.findByRole("dialog");
+    expect(within(details).getByText("Expedited Shipping")).toBeInTheDocument();
+    const picker = await openRatePicker(details);
+    expect(
+      within(picker).getByRole("radio", { name: /The rate chosen at checkout: USPS Priority Mail \(Expedited Shipping\)/ }),
+    ).toBeChecked();
+    const priority = (await within(picker).findByRole("radio", { name: /USPS Priority Mail · \$9\.00/ })).closest("label")!;
+    expect(within(priority).getByText("Expedited Shipping today")).toBeInTheDocument();
+    expect(within(priority).getByText("Chosen at checkout")).toBeInTheDocument();
+  });
+
+  it("shows a label Shippo is still making, and picks it up with Check again", async () => {
+    const pending: AccessOrder = { ...keychainOrder, shippo_transaction_id: "tr_1", label_url: null };
+    answerGets({
+      "businessCard/access-orders": { ...ordersList, data: [pending, proOrder] },
+      "businessCard/access-orders/7": pending,
+    });
+    const { business_card: _card, ...withoutCard } = pending;
+    vi.mocked(axios.post).mockResolvedValue({
+      data: {
+        data: {
+          ...withoutCard,
+          fulfillment_status: "processing",
+          label_url: "https://labels.example/7.pdf",
+          label_created_at: "2026-11-16T17:00:00.000Z",
+          tracking_number: "9400111899223197428490",
+        },
+      },
+    });
+    renderAt("/access-orders/7");
+
+    const details = await screen.findByRole("dialog");
+    expect(within(details).getByText(/Shippo is still making this label/)).toBeInTheDocument();
+    expect(within(details).queryByRole("button", { name: /Void label/ })).not.toBeInTheDocument();
+    fireEvent.click(within(details).getByRole("button", { name: /Check again/ }));
+
+    await waitFor(() => expect(axios.post).toHaveBeenCalledWith(`${API}businessCard/access-orders/7/label`, {}));
+    expect(await within(details).findByRole("link", { name: /Print label/ })).toHaveAttribute(
+      "href",
+      "https://labels.example/7.pdf",
+    );
   });
 });
 
