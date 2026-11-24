@@ -11,7 +11,7 @@ export interface ApiErrorBody {
   /** Machine-readable reason on newer endpoints, e.g. "INVALID_CARD", "CARD_EXISTS". */
   code?: string;
   /** Extra facts for some codes: the field a check failed on, the conflicting record or account. */
-  details?: { field?: string; card_id?: number | string; user_id?: number | string };
+  details?: { field?: string; card_id?: number | string; user_id?: number | string; run_id?: number | string };
 }
 
 /** The `code` of a failed API call, e.g. "NOT_FOUND", "ACCOUNT_EXISTS". */

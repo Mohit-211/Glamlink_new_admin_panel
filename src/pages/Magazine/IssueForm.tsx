@@ -25,6 +25,7 @@ import { websiteUrl } from "../../utils/website";
 import IssueFeaturesForm from "./IssueFeaturesForm";
 import styles from "./Magazine.module.scss";
 import type { IssueFields, IssueStatus, MagazineIssue } from "../../types/magazine";
+import { paths } from "../../paths";
 
 interface FormValues {
   title: string;
@@ -285,7 +286,7 @@ const IssueForm = () => {
   const saved = (next: MagazineIssue) => {
     if (id) setIssue(next);
     // A new issue opens for editing, where its people are set.
-    else navigate(`/magazine/edit/${next.id}`, { replace: true });
+    else navigate(paths.issue(next.id), { replace: true });
   };
 
   return (
@@ -293,7 +294,7 @@ const IssueForm = () => {
       <PageHeader
         title={id ? (issue?.title ?? "Issue") : "Add issue"}
         subtitle={id ? "The issue and the people in it." : "The people in it are set once it's added."}
-        back="/magazine"
+        back={paths.magazine}
         extra={
           issue && (
             <Button
@@ -317,7 +318,7 @@ const IssueForm = () => {
       {load === "missing" && (
         <Panel>
           <Empty description="There's no such issue. It may have been deleted.">
-            <Button onClick={() => navigate("/magazine")}>Back to the magazine</Button>
+            <Button onClick={() => navigate(paths.magazine)}>Back to the magazine</Button>
           </Empty>
         </Panel>
       )}

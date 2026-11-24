@@ -36,3 +36,9 @@ export const saveFile = (blob: Blob, filename: string) => {
   link.remove();
   URL.revokeObjectURL(url);
 };
+
+/**
+ * A picked .csv as an upload: the same bytes and name, typed text/csv. Browsers type a .csv as they see fit (Excel on
+ * Windows says application/vnd.ms-excel), and the API took only text/csv before Nov 24 (A-CNT-5).
+ */
+export const asCsvFile = (file: File) => new File([file], file.name, { type: "text/csv" });

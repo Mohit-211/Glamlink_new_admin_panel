@@ -27,6 +27,7 @@ import ImgCrop from "antd-img-crop";
 import VideoCropModal from "./VideoCropModal";
 import { CreateAd, UpdateAd, GetAdById, adFromResponse } from "../../services/Api/AdApi";
 import styles from "./AddAd.module.scss";
+import { paths } from "../../paths";
 
 /** Locked pixel size of the picked slot; a null height means "auto". */
 interface AdSize {
@@ -442,7 +443,7 @@ const AddAd = () => {
         message.success("Ad created successfully");
       }
 
-      navigate("/ads");
+      navigate(paths.ads);
     } catch (err) {
       console.error(err);
       message.error("Failed");
@@ -464,7 +465,7 @@ const AddAd = () => {
           </p>
         </div>
 
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/ads")}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(paths.ads)}>
           Return to Ads
         </Button>
       </div>
@@ -750,7 +751,7 @@ const AddAd = () => {
                 : "Fill in the details and save the ad."}
             </span>
 
-            <Button onClick={() => navigate("/ads")}>Cancel</Button>
+            <Button onClick={() => navigate(paths.ads)}>Cancel</Button>
 
             <Button type="primary" onClick={handleSubmit} loading={submitting}>
               {isEditMode ? "Save changes" : "Save ad"}

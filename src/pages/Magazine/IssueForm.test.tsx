@@ -61,8 +61,8 @@ const renderAt = (path: string) =>
   render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/magazine/add" element={<IssueForm />} />
-        <Route path="/magazine/edit/:id" element={<IssueForm />} />
+        <Route path="/media/magazine/new" element={<IssueForm />} />
+        <Route path="/media/magazine/:id" element={<IssueForm />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -76,7 +76,7 @@ describe("Magazine issue form", () => {
     const created: MagazineIssue = { ...ISSUE, id: 9, slug: "issue-118", title: "Issue 118", features: [] };
     answerGets(created);
     vi.mocked(axios.post).mockResolvedValue({ data: { data: created } });
-    renderAt("/magazine/add");
+    renderAt("/media/magazine/new");
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "  Issue 118 " } });
     fireEvent.change(screen.getByLabelText("Issue number"), { target: { value: "118" } });
@@ -107,7 +107,7 @@ describe("Magazine issue form", () => {
   it("saves an issue's fields, leaving out the cover it already had", async () => {
     answerGets(ISSUE);
     vi.mocked(axios.put).mockImplementation(async (_url, body) => ({ data: { data: { ...ISSUE, ...(body as object) } } }));
-    renderAt("/magazine/edit/7");
+    renderAt("/media/magazine/7");
 
     fireEvent.change(await screen.findByDisplayValue("Issue 117"), { target: { value: "Issue 117: Winter" } });
     fireEvent.click(screen.getByRole("button", { name: "Save issue" }));
@@ -133,7 +133,7 @@ describe("Magazine issue form", () => {
   it("sends a removed cover as empty", async () => {
     answerGets(ISSUE);
     vi.mocked(axios.put).mockResolvedValue({ data: { data: { ...ISSUE, cover_image: null } } });
-    renderAt("/magazine/edit/7");
+    renderAt("/media/magazine/7");
 
     fireEvent.click(await screen.findByRole("button", { name: /Remove$/ }));
     fireEvent.click(screen.getByRole("button", { name: "Save issue" }));
@@ -151,7 +151,7 @@ describe("Magazine issue form", () => {
         data: { message: "This slug is taken.", code: "INVALID_ISSUE", details: { field: "slug" } },
       },
     });
-    renderAt("/magazine/edit/7");
+    renderAt("/media/magazine/7");
 
     fireEvent.click(await screen.findByRole("button", { name: "Save issue" }));
 
@@ -160,7 +160,7 @@ describe("Magazine issue form", () => {
 
   it("says when the issue doesn't exist", async () => {
     vi.mocked(axios.get).mockRejectedValue({ isAxiosError: true, response: { status: 404, data: { code: "NOT_FOUND" } } });
-    renderAt("/magazine/edit/404");
+    renderAt("/media/magazine/404");
 
     expect(await screen.findByText(/There's no such issue/)).toBeInTheDocument();
   });
@@ -170,7 +170,7 @@ describe("People in an issue", () => {
   it("saves the people left, with their part and page", async () => {
     answerGets(ISSUE);
     vi.mocked(axios.put).mockResolvedValue({ data: { data: { ...ISSUE, features: [ISSUE.features[0]] } } });
-    renderAt("/magazine/edit/7");
+    renderAt("/media/magazine/7");
 
     expect(await screen.findByText("Mentioned Brand")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Remove person 2" }));
@@ -186,7 +186,7 @@ describe("People in an issue", () => {
   it("adds a person picked by name", async () => {
     answerGets({ ...ISSUE, features: [] });
     vi.mocked(axios.put).mockImplementation(async (_url, body) => ({ data: { data: { ...ISSUE, ...(body as object) } } }));
-    renderAt("/magazine/edit/7");
+    renderAt("/media/magazine/7");
 
     fireEvent.click(await screen.findByRole("button", { name: /Add a person/ }));
     // The new row's picker: open it, then pick from the accounts it lists.
@@ -212,7 +212,7 @@ describe("People in an issue", () => {
         data: { message: "6 is not a professional or brand account.", code: "INVALID_ISSUE", details: { field: "features" } },
       },
     });
-    renderAt("/magazine/edit/7");
+    renderAt("/media/magazine/7");
 
     fireEvent.click(await screen.findByRole("button", { name: "Save people" }));
 
@@ -222,7 +222,7 @@ describe("People in an issue", () => {
 
   it("asks for an account on a row left empty", async () => {
     answerGets({ ...ISSUE, features: [] });
-    renderAt("/magazine/edit/7");
+    renderAt("/media/magazine/7");
 
     fireEvent.click(await screen.findByRole("button", { name: /Add a person/ }));
     fireEvent.click(screen.getByRole("button", { name: "Save people" }));

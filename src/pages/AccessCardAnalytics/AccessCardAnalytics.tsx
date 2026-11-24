@@ -751,7 +751,7 @@ const AccessCardAnalytics = () => {
               <BarChartOutlined />
             </span>
             <div>
-              <h2>Access Card Analytics</h2>
+              <h2>Analytics</h2>
               <p>See which cards get the most views and what visitors click on.</p>
             </div>
           </div>

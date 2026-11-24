@@ -12,6 +12,7 @@ import {
 import styles from "./PartnerInquiries.module.scss";
 import { useIdParam } from "../../utils/routing";
 import type { PartnershipInquiry } from "../../types/content";
+import { paths } from "../../paths";
 
 const interestColor: Record<string, string> = {
   Podcast: "geekblue",
@@ -49,7 +50,7 @@ const ViewPartnerInquiry = () => {
         try {
           await DeletePartnershipInquiry(id);
           message.success("Inquiry deleted successfully");
-          navigate("/partner-inquiries");
+          navigate(paths.partnerInquiries);
         } catch (err) {
           message.error("Failed to delete inquiry");
         }
@@ -64,7 +65,7 @@ const ViewPartnerInquiry = () => {
           <button
             type="button"
             className={styles.iconButton}
-            onClick={() => navigate("/partner-inquiries")}
+            onClick={() => navigate(paths.partnerInquiries)}
           >
             <ArrowLeftOutlined />
           </button>

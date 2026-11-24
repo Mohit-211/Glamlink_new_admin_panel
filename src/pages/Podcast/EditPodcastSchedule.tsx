@@ -29,6 +29,7 @@ import { apiErrorMessage } from "../../utils/apiError";
 import { useIdParam } from "../../utils/routing";
 import type { JournalTopic } from "../../types/journal";
 import type { Dayjs } from "dayjs";
+import { paths } from "../../paths";
 
 interface PodcastFormValues {
   name: string;
@@ -261,7 +262,7 @@ const EditPodcastSchedule = () => {
       );
 
       navigate(
-        "/podcast-schedule",
+        paths.podcastSchedule,
       );
     } catch (error) {
       console.error(error);
@@ -283,7 +284,7 @@ const EditPodcastSchedule = () => {
           <Button
             onClick={() =>
               navigate(
-                "/podcast-schedule",
+                paths.podcastSchedule,
               )
             }
           >
@@ -395,7 +396,7 @@ const EditPodcastSchedule = () => {
             <Button
               onClick={() =>
                 navigate(
-                  "/podcast-schedule",
+                  paths.podcastSchedule,
                 )
               }
             >

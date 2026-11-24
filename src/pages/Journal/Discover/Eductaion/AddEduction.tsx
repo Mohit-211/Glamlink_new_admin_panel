@@ -15,6 +15,7 @@ import { UploadOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router";
 import ImgCrop from "antd-img-crop";
 import { CreateEducation } from "../../../../services/Api/JournalApi";
+import { paths } from "../../../../paths";
 
 const AddEducation = () => {
   const [form] = Form.useForm();
@@ -45,7 +46,7 @@ const AddEducation = () => {
           : "Education published successfully",
       );
 
-      navigate("/education");
+      navigate(paths.education);
     } catch {
       message.error("Failed");
     }
@@ -62,15 +63,15 @@ const AddEducation = () => {
           marginBottom: "20px"
         }}>
         <div>
-          <h3>EDUCATION</h3>
+          <h3>Education</h3>
           <p>Manage education articles</p>
         </div>
 
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/education")}
+          onClick={() => navigate(paths.education)}
         >
-          Return to Education Articles
+          Return to Education
         </Button>
       </div>
 
@@ -162,7 +163,7 @@ const AddEducation = () => {
               Publish Education
             </Button>
 
-            <Button onClick={() => navigate("/education")}>Cancel</Button>
+            <Button onClick={() => navigate(paths.education)}>Cancel</Button>
           </Space>
         </Form>
       </Card>

@@ -324,7 +324,7 @@ const ProductTags = () => {
   return (
     <div>
       <PageHeader
-        title="Product tags"
+        title="Product Tags"
         subtitle="One tag per product, shown top-left on its card and its page. Editorial: only admins can set it, so owners can't claim a feature they didn't get."
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal(null)}>

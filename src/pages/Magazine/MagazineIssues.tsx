@@ -9,6 +9,7 @@ import { apiErrorMessage } from "../../utils/apiError";
 import { websiteUrl } from "../../utils/website";
 import styles from "./Magazine.module.scss";
 import type { IssueRow, IssueStatus } from "../../types/magazine";
+import { paths } from "../../paths";
 
 const PAGE_SIZE = 50;
 
@@ -149,7 +150,7 @@ const MagazineIssues = () => {
               type="text"
               icon={<EditOutlined />}
               aria-label={`Edit ${row.title}`}
-              onClick={() => navigate(`/magazine/edit/${row.id}`)}
+              onClick={() => navigate(paths.issue(row.id))}
             />
           </Tooltip>
           <Tooltip title={row.status === "published" ? "View on site" : "Drafts aren't on the site"}>
@@ -199,7 +200,7 @@ const MagazineIssues = () => {
               options={STATUSES}
               style={{ width: 140 }}
             />
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("/magazine/add")}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate(paths.newIssue)}>
               Add issue
             </Button>
           </>

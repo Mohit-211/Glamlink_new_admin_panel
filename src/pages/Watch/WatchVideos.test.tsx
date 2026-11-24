@@ -66,12 +66,12 @@ const answerGets = () =>
 
 const EditScreen = () => <p>Editing video {useParams().id}</p>;
 
-const renderPage = (path = "/watch/videos") =>
+const renderPage = (path = "/media/videos") =>
   render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/watch/videos" element={<WatchVideos />} />
-        <Route path="/watch/videos/:id" element={<EditScreen />} />
+        <Route path="/media/videos" element={<WatchVideos />} />
+        <Route path="/media/videos/:id" element={<EditScreen />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -94,7 +94,7 @@ beforeEach(() => {
 describe("Videos", () => {
   it("lists the videos with their series, source and length", async () => {
     answerGets();
-    renderPage("/watch/videos?series=1");
+    renderPage("/media/videos?series=1");
 
     expect(await screen.findByText("Glow Up Secrets")).toBeInTheDocument();
     expect(screen.getByText("Playlist import")).toBeInTheDocument();

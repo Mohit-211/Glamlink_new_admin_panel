@@ -16,6 +16,7 @@ import { UploadOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router";
 import ImgCrop from "antd-img-crop";
 import { CreateEvent } from "../../../../services/Api/JournalApi";
+import { paths } from "../../../../paths";
 
 const AddEvent = () => {
   const [form] = Form.useForm();
@@ -50,7 +51,7 @@ const AddEvent = () => {
           : "Event published successfully",
       );
 
-      navigate("/events");
+      navigate(paths.events);
     } catch {
       message.error("Failed");
     }
@@ -67,15 +68,15 @@ const AddEvent = () => {
           marginBottom: "20px"
         }}>
         <div>
-          <h3>EVENTS</h3>
+          <h3>Events</h3>
           <p>Manage events</p>
         </div>
 
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/events")}
+          onClick={() => navigate(paths.events)}
         >
-          Return to Event Articles
+          Return to Events
         </Button>
       </div>
 
@@ -172,7 +173,7 @@ const AddEvent = () => {
               Publish Event
             </Button>
 
-            <Button onClick={() => navigate("/events")}>Cancel</Button>
+            <Button onClick={() => navigate(paths.events)}>Cancel</Button>
           </Space>
         </Form>
       </Card>

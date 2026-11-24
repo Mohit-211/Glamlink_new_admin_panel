@@ -11,6 +11,7 @@ import {
   Button,
   Input,
   Switch,
+  Tag,
   type TableColumnsType,
 } from "antd";
 import { useNavigate } from "react-router";
@@ -33,6 +34,23 @@ import { apiErrorBody, apiErrorMessage, apiErrorStatus } from "../../utils/apiEr
 import { singleSorter, type TableChangeHandler, type TableParams, type WithIndex } from "../../utils/table";
 import type { Professional } from "../../types/user";
 import { downloadCsv } from "../../utils/csv";
+import { paths } from "../../paths";
+import { GetSubscriptions } from "../../services/Api/AccessAdminApi";
+import type { SubscriptionSeat } from "../../types/access";
+import { SEAT_SOURCE_LABEL, SEAT_STATUS } from "../AccessSubscriptions/seats";
+
+/** Their Access Pro: the seat's status and how it is paid, or "None". */
+const AccessProCell = ({ seat }: { seat: SubscriptionSeat | undefined }) => {
+  if (!seat) return <span style={{ color: "var(--color-text-secondary)" }}>None</span>;
+  const status = SEAT_STATUS[seat.status];
+  const tag = <Tag color={status?.color}>{status?.label ?? seat.status}</Tag>;
+  return (
+    <span>
+      {status?.hint ? <Tooltip title={status.hint}>{tag}</Tooltip> : tag}
+      {SEAT_SOURCE_LABEL[seat.source] ?? seat.source}
+    </span>
+  );
+};
 
 const Professionals = () => {
   const navigate = useNavigate();
@@ -40,6 +58,24 @@ const Professionals = () => {
   const [userBackupData, setUserBackupData] = useState<WithIndex<Professional>[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  // Each account's Access Pro seat (one per account), loaded once: undefined while loading, null if it couldn't load.
+  // The API answers the latest 1,000 seats by last change, which holds every live one (each renewal changes it).
+  const [seats, setSeats] = useState<Map<number, SubscriptionSeat> | null | undefined>(undefined);
+
+  useEffect(() => {
+    let active = true;
+    GetSubscriptions()
+      .then((res) => {
+        if (active) setSeats(new Map(res.data.data.map((seat) => [seat.user_id, seat])));
+      })
+      .catch((err) => {
+        console.error("Error loading the subscriptions:", err);
+        if (active) setSeats(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // 🔹 Shared style for the small icon-only action buttons in the table
   const smallIconBtnStyle = {
@@ -110,6 +146,19 @@ const Professionals = () => {
           )}
         </span>
       ),
+    },
+    {
+      title: "Access Pro",
+      key: "access_pro",
+      width: 190,
+      render: (_, record) =>
+        seats === undefined ? (
+          <span style={{ color: "var(--color-text-secondary)" }}>…</span>
+        ) : seats === null ? (
+          <Tooltip title="Couldn't load the subscriptions">—</Tooltip>
+        ) : (
+          <AccessProCell seat={seats.get(record.id)} />
+        ),
     },
     {
       title: "Account Created On",
@@ -188,7 +237,7 @@ const Professionals = () => {
       console.error("Error loading data:", e);
 
       if (apiErrorStatus(e) === 403) {
-        navigate("/error401");
+        navigate(paths.forbidden);
       } else if (apiErrorStatus(e) === 500) {
         // An expired session is handled for every request (utils/session.ts).
         console.error("Server error. Please try again later.");
@@ -361,7 +410,7 @@ const Professionals = () => {
   };
 
   const navigateToViewUser = (event: React.MouseEvent<HTMLElement>, id: number) => {
-    navigate(`/viewProfessionals/${id}`);
+    navigate(paths.professional(id));
   };
 
   const rowSelection = {
@@ -393,7 +442,7 @@ const Professionals = () => {
             className="page-title"
             style={{ margin: 0, fontWeight: 700, fontSize: 20 }}
           >
-            Professionals Management
+            All Professionals
           </h3>
           <p
             className="page-sub-title"

@@ -45,7 +45,7 @@ const AccessPricing = () => {
   return (
     <div>
       <PageHeader
-        title="Access Pricing"
+        title="Pricing"
         subtitle="What Access cards sell and for how much: plans, list prices, sales, personal prices, and what Free and Pro may do."
         extra={sale && <Tag color="green">Sale running: {`${sale.name}, ${discountOff(sale)}`}</Tag>}
       />

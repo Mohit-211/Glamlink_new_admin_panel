@@ -51,10 +51,10 @@ beforeEach(() => {
 
 const openJournal = async () => {
   render(
-    <MemoryRouter initialEntries={["/edit-journal/7"]}>
+    <MemoryRouter initialEntries={["/journal/articles/7"]}>
       <Routes>
-        <Route path="/edit-journal/:id" element={<EditJournal />} />
-        <Route path="/journals" element={<p>Journal list</p>} />
+        <Route path="/journal/articles/:id" element={<EditJournal />} />
+        <Route path="/journal/articles" element={<p>Journal list</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -62,7 +62,7 @@ const openJournal = async () => {
 };
 
 const save = async () => {
-  fireEvent.click(screen.getByRole("button", { name: "Update journal" }));
+  fireEvent.click(screen.getByRole("button", { name: "Update article" }));
   await screen.findByText("Journal list");
   return vi.mocked(axios.put).mock.calls[0][1] as FormData;
 };

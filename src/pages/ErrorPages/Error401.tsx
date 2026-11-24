@@ -3,11 +3,12 @@ import "./Error401.css";
 import { useNavigate } from "react-router";
 import AccessImage from "../../assets/access-denied-5627546-4694106.webp";
 import { Button } from "antd";
+import { paths } from "../../paths";
 
 const Error401 = () => {
   const navigate = useNavigate();
   const navigateToDashboard = () => {
-    navigate("/");
+    navigate(paths.dashboard);
   };
 
   return (

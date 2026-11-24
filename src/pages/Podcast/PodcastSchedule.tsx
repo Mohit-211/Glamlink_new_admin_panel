@@ -15,6 +15,7 @@ import { ImportPlaylists } from "../../services/Api/VideoApi";
 import { apiErrorMessage } from "../../utils/apiError";
 import { type WithIndex } from "../../utils/table";
 import type { PodcastSchedule } from "../../types/journal";
+import { paths } from "../../paths";
 
 const { Search } = Input;
 
@@ -73,7 +74,7 @@ const isPast = scheduleDate.isBefore(dayjs().startOf("day"));
         <Space>
           <Button
             type="link"
-            onClick={() => navigate(`/edit-podcast-schedule/${record.id}`)}
+            onClick={() => navigate(paths.podcastScheduleItem(record.id))}
           >
             Edit
           </Button>
@@ -170,7 +171,7 @@ const isPast = scheduleDate.isBefore(dayjs().startOf("day"));
           marginBottom: "20px"
         }}>
         <div>
-          <h3>PODCAST SCHEDULES</h3>
+          <h3>Podcast Schedule</h3>
           <p>Manage all podcast schedules</p>
         </div>
 
@@ -189,7 +190,7 @@ const isPast = scheduleDate.isBefore(dayjs().startOf("day"));
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate("/add-podcast-schedule")}
+            onClick={() => navigate(paths.newPodcastScheduleItem)}
           >
             Add Schedule
           </Button>

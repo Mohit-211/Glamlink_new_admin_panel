@@ -70,8 +70,8 @@ describe("Where a page is tagged", () => {
     answer({ count: 1, rows: [article(31, "Five brands to watch")] }, { count: 1, rows: [episode(7, "Skin barrier 101")] });
     renderTab();
 
-    expect(await screen.findByRole("link", { name: "Five brands to watch" })).toHaveAttribute("href", "/edit-journal/31");
-    expect(await screen.findByRole("link", { name: "Skin barrier 101" })).toHaveAttribute("href", "/watch/videos/7");
+    expect(await screen.findByRole("link", { name: "Five brands to watch" })).toHaveAttribute("href", "/journal/articles/31");
+    expect(await screen.findByRole("link", { name: "Skin barrier 101" })).toHaveAttribute("href", "/media/videos/7");
     expect(axios.get).toHaveBeenCalledWith(ARTICLES, { params: { page: 1, limit: 10 } });
     expect(axios.get).toHaveBeenCalledWith(VIDEOS, { params: { page: 1, limit: 10, series: "beauty-vault-podcast" } });
     expect(screen.getByText("By Melanie Marks")).toBeInTheDocument();

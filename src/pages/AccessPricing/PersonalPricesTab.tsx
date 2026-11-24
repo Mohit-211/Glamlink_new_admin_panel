@@ -26,6 +26,7 @@ import { showFieldError } from "../../utils/formErrors";
 import type { AccessProduct, PersonalPrice, PersonalPriceCreate, SoldProductCode } from "../../types/access";
 import { date, dateTime, listPrice, money, priceUnit, productName, soldProducts, toCents } from "./pricing";
 import styles from "./AccessPricing.module.scss";
+import { paths } from "../../paths";
 
 const { Search } = Input;
 
@@ -84,7 +85,7 @@ const PersonalPricesTab = ({ products }: { products: AccessProduct[] }) => {
         <div>
           <div className={styles.strong}>{price.email ?? "—"}</div>
           {price.user_id ? (
-            <Link to={`/viewProfessionals/${price.user_id}`} className={styles.subText}>
+            <Link to={paths.professional(price.user_id)} className={styles.subText}>
               Account #{price.user_id}
             </Link>
           ) : (

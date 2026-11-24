@@ -17,6 +17,7 @@ import { CreateJournalTopic, UploadJournalMedia } from "../../services/Api/Journ
 import styles from "./JournalTopics.module.scss";
 import TopicTileFields, { appendTileFields } from "./TopicTileFields";
 import { apiErrorMessage, isFormValidationError } from "../../utils/apiError";
+import { paths } from "../../paths";
 
 const AddJournalTopic = () => {
   const [form] = Form.useForm();
@@ -52,7 +53,7 @@ const AddJournalTopic = () => {
 
       message.success("Topic created successfully");
 
-      navigate("/journal-topics");
+      navigate(paths.topics);
     } catch (error) {
       console.error(error);
 
@@ -76,13 +77,13 @@ const AddJournalTopic = () => {
           <h3 className={styles.headerTitle}>Add Topic</h3>
 
           <p className={styles.headerSubtitle}>
-            Create a reusable topic for Journal articles.
+            Create a topic for articles, products, podcast guests and videos.
           </p>
         </div>
 
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/journal-topics")}
+          onClick={() => navigate(paths.topics)}
         >
           Return to Topics
         </Button>
@@ -215,7 +216,7 @@ const AddJournalTopic = () => {
                 podcasts afterward.
               </span>
 
-              <Button onClick={() => navigate("/journal-topics")}>
+              <Button onClick={() => navigate(paths.topics)}>
                 Cancel
               </Button>
 

@@ -65,10 +65,10 @@ const PageScreen = () => {
 
 const renderList = () =>
   render(
-    <MemoryRouter initialEntries={["/pages"]}>
+    <MemoryRouter initialEntries={["/professionals/pages"]}>
       <Routes>
-        <Route path="/pages" element={<ProfilePages />} />
-        <Route path="/pages/:userId" element={<PageScreen />} />
+        <Route path="/professionals/pages" element={<ProfilePages />} />
+        <Route path="/professionals/pages/:userId" element={<PageScreen />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -125,6 +125,18 @@ describe("Professional and brand pages: the list", () => {
     await waitFor(() =>
       expect(lastQuery()).toEqual({ params: { page: 1, limit: 50, featured: "true", search: "kate" } }),
     );
+  });
+
+  it("lists only the pages off the directory map, and marks them and the brands with no email (Nov 24)", async () => {
+    answer([row({ email: null, claimed: false, created_by_admin: true }), { ...KATE, is_on_map: false, email: "kate@example.com" }]);
+    renderList();
+    await screen.findByText("Revance");
+
+    expect(screen.getByText("Off the map")).toBeInTheDocument();
+    expect(screen.getByText("No email")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("switch", { name: "Off the map only" }));
+    await waitFor(() => expect(lastQuery()).toEqual({ params: { page: 1, limit: 50, on_map: "false" } }));
   });
 
   it("tells the page's screen whether the account can sign in", async () => {

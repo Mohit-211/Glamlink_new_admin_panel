@@ -352,10 +352,4 @@ export const UpdateJournalTopicParagraphs = async (
   return axios.put<ApiResponse<unknown>>(`${BASE_URL}journal/topic/${topicId}/paragraphs`, data);
 };
 
-// ==============================
-// Journal Topic Professional Mapping
-// ==============================
-
-export const UpdateJournalTopicProfessionals = async (topicId: Id, data: { professional_ids: number[] }) => {
-  return axios.put<ApiResponse<JournalTopic>>(`${BASE_URL}journal/topic/${topicId}/professionals`, data);
-};
+// A topic's professionals, brands, products, articles and videos: TopicsApi.ts (Nov 24).

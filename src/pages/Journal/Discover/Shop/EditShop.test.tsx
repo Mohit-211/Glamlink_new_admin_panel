@@ -57,10 +57,10 @@ const renderEdit = (product: Shop, tags: ProductTag[] | Error = TAGS) => {
   });
   vi.mocked(axios.put).mockResolvedValue({ data: { data: product } });
   render(
-    <MemoryRouter initialEntries={[`/edit-shop/${product.id}`]}>
+    <MemoryRouter initialEntries={[`/shop/products/${product.id}`]}>
       <Routes>
-        <Route path="/edit-shop/:id" element={<EditShop />} />
-        <Route path="/shop" element={<p>Product list</p>} />
+        <Route path="/shop/products/:id" element={<EditShop />} />
+        <Route path="/shop/products" element={<p>Product list</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -89,7 +89,7 @@ const choose = async (combobox: HTMLElement, name: string) => {
   fireEvent.click(option);
 };
 
-const save = () => fireEvent.click(screen.getByRole("button", { name: "Update Shop" }));
+const save = () => fireEvent.click(screen.getByRole("button", { name: "Update Product" }));
 
 /** What the save sent. */
 const sentForm = () => vi.mocked(axios.put).mock.lastCall?.[1] as FormData;

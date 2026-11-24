@@ -21,6 +21,7 @@ import ImgCrop from "antd-img-crop";
 import { GetEventById, UpdateEvent } from "../../../../services/Api/JournalApi";
 import { useIdParam } from "../../../../utils/routing";
 import { apiErrorStatus } from "../../../../utils/apiError";
+import { paths } from "../../../../paths";
 
 const EditEvent = () => {
   const id = useIdParam();
@@ -56,7 +57,7 @@ const EditEvent = () => {
       // The API answers 404 for an item that doesn't exist (any more).
       if (apiErrorStatus(error) === 404) {
         message.error("This event doesn't exist; it may have been deleted");
-        navigate("/events");
+        navigate(paths.events);
         return;
       }
       message.error("Failed to load event");
@@ -92,7 +93,7 @@ const EditEvent = () => {
       await UpdateEvent(id, formData);
 
       message.success("Event updated successfully");
-      navigate("/events");
+      navigate(paths.events);
     } catch {
       message.error("Failed to update Event");
     }
@@ -109,15 +110,15 @@ const EditEvent = () => {
           marginBottom: "20px"
         }}>
         <div>
-          <h3>EVENTS</h3>
+          <h3>Events</h3>
           <p>Manage events</p>
         </div>
 
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/events")}
+          onClick={() => navigate(paths.events)}
         >
-          Return to Event Articles
+          Return to Events
         </Button>
       </div>
 
@@ -223,7 +224,7 @@ const EditEvent = () => {
               Update Event
             </Button>
 
-            <Button onClick={() => navigate("/events")}>Cancel</Button>
+            <Button onClick={() => navigate(paths.events)}>Cancel</Button>
           </Space>
         </Form>
       </Card>

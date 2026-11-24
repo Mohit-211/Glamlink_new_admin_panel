@@ -219,7 +219,7 @@ const Authors = () => {
 				    marginBottom: "20px"
 				}}>
 				<div>
-					<h3>AUTHORS</h3>
+					<h3>Authors</h3>
 					<p>View, add, edit, and delete Authors</p>
 				</div>
 

@@ -41,6 +41,7 @@ import {
 import ReviewModal, { GoogleClaimAlert, type ReviewAction } from "./ReviewModal";
 import { useAdminNames } from "./useAdminNames";
 import styles from "./DirectoryApplications.module.scss";
+import { paths } from "../../paths";
 
 const dash = <span className={styles.muted}>-</span>;
 
@@ -182,7 +183,7 @@ const ViewDirectoryApplication = () => {
                 Try again
               </Button>
             )}
-            <Button onClick={() => navigate(back)}>Back to directory applications</Button>
+            <Button onClick={() => navigate(back)}>Back to Applications</Button>
           </>
         }
       />
@@ -266,7 +267,7 @@ const ViewDirectoryApplication = () => {
               children:
                 a.user_id !== null ? (
                   <>
-                    <Link to={`/viewProfessionals/${a.user_id}`}>Account #{a.user_id}</Link>
+                    <Link to={paths.professional(a.user_id)}>Account #{a.user_id}</Link>
                     {page?.visible && page.slug && (
                       <>
                         {" · "}

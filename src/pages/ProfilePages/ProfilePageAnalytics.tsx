@@ -21,6 +21,7 @@ import {
 } from "./analytics";
 import { publicPageUrl, usePageRouteState } from "./pageStatus";
 import styles from "./ProfilePages.module.scss";
+import { paths } from "../../paths";
 
 const { RangePicker } = DatePicker;
 
@@ -126,7 +127,7 @@ const AnalyticsScreen = ({ userId }: { userId: string }) => {
   }, [validId, userId, from, to]);
 
   const days = useMemo(() => (data ? fillDays(data) : []), [data]);
-  const back = routeState.from ?? "/pages";
+  const back = routeState.from ?? paths.profilePages;
 
   if (notFound) {
     return (
@@ -166,7 +167,7 @@ const AnalyticsScreen = ({ userId }: { userId: string }) => {
             />
             <Button
               icon={<EditOutlined />}
-              onClick={() => navigate(`/pages/${userId}`, { state: { claimed: routeState.claimed, from: routeState.from } })}
+              onClick={() => navigate(paths.profilePage(userId), { state: { claimed: routeState.claimed, from: routeState.from } })}
             >
               Edit page
             </Button>

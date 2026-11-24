@@ -6,13 +6,14 @@ import type {
   ListingAccountType,
   ListingPhotoChanges,
 } from "../../types/directoryApplication";
+import { paths } from "../../paths";
 
 // What the directory application screens share: reading the JSON fields (kept as the website's form, now retired, sent
 // them, so any item may be malformed), the words for statuses and location types, and the listing form's values.
 
-export const LIST_PATH = "/directory-applications";
-export const viewPath = (id: number | string) => `${LIST_PATH}/${id}`;
-export const editPath = (id: number | string) => `${LIST_PATH}/edit/${id}`;
+export const LIST_PATH = paths.directoryApplications;
+export const viewPath = paths.directoryApplication;
+export const editPath = paths.editDirectoryListing;
 
 /** Router state the list hands on, so the pages it opens lead back to it as it was (filter, search, page). */
 export interface FromList {

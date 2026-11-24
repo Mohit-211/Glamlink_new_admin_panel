@@ -1,7 +1,9 @@
 /** @format */
 
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { BrowserRouter as Router, Routes, Route, Navigate, generatePath, useLocation, useParams } from "react-router";
 import { ConfigProvider } from "antd";
+import { MOVED_PATHS, paths } from "./paths";
+import NotFound from "./pages/ErrorPages/NotFound";
 import { antdTheme } from "./config/theme";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Login from "./pages/Login/Login";
@@ -48,7 +50,7 @@ import JournalTopics from "./pages/JournalTopics/JournalTopics";
 import JournalFaq from "./pages/JournalFaq/JournalFaq";
 import AddJournalTopic from "./pages/JournalTopics/AddJournalTopic";
 import EditJournalTopic from "./pages/JournalTopics/EditJournalTopic";
-import JournalTopicDetails from "./pages/JournalTopics/JournalTopicDetails";
+import TopicScreen from "./pages/JournalTopics/TopicScreen";
 import AccessCardAnalytics from "./pages/AccessCardAnalytics/AccessCardAnalytics";
 import PartnerInquiries from "./pages/PartnerInquiries/PartnerInquiries";
 import ViewPartnerInquiry from "./pages/PartnerInquiries/ViewPartnerInquiry";
@@ -58,6 +60,7 @@ import SearchTerms from "./pages/SearchTerms/SearchTerms";
 import HomeSettings from "./pages/HomeSettings/HomeSettings";
 import ProfilePages from "./pages/ProfilePages/ProfilePages";
 import NewBrandPage from "./pages/ProfilePages/NewBrandPage";
+import ImportBrands from "./pages/ProfilePages/ImportBrands";
 import EditProfilePage from "./pages/ProfilePages/EditProfilePage";
 import ProfilePageAnalytics from "./pages/ProfilePages/ProfilePageAnalytics";
 import MagazineIssues from "./pages/Magazine/MagazineIssues";
@@ -78,100 +81,122 @@ const theme = antdTheme();
 // antd's static message() / notification() calls render outside the app's tree; give them the same theme.
 ConfigProvider.config({ holderRender: (children) => <ConfigProvider theme={theme}>{children}</ConfigProvider> });
 
+/** An old address (MOVED_PATHS): on to its new one, keeping the query string and hash. */
+const Moved = ({ to }: { to: string }) => {
+  const params = useParams();
+  const { search, hash } = useLocation();
+  return <Navigate replace to={{ pathname: generatePath(to, params), search, hash }} />;
+};
+
+// The routes follow the sidebar's groups; every address is in paths.ts.
 function App() {
   return (
     <ConfigProvider theme={theme}>
     <Router>
       <Routes>
-
-        <Route path="/login" element={<Login />} />
-        <Route path="/error401" element={<Error401 />} />
-        <Route path="/" element={<MainLayout />}>
+        <Route path={paths.login} element={<Login />} />
+        <Route path={paths.forbidden} element={<Error401 />} />
+        <Route path={paths.dashboard} element={<MainLayout />}>
           <Route index element={<Dashboard />} />
-          <Route path="/reset-password" element={<ChangePassword />} />
-          <Route path="/professionals" element={<Professionals />} />
-          <Route
-            path="/viewProfessionals/:id"
-            element={<ViewProfessionals />}
-          />
-          <Route path="/adminList" element={<AdminUser />} />
-          <Route path="/viewAdmin" element={<ViewAdmin />} />
-          <Route path="/addAdmin" element={<AddAdmin />} />
 
-          <Route path="/loginLogs" element={<LoginLogs />} />
+          {/* Professionals */}
+          <Route path={paths.professionals} element={<Professionals />} />
+          <Route path={paths.professional(":id")} element={<ViewProfessionals />} />
+          <Route path={paths.profilePages} element={<ProfilePages />} />
+          <Route path={paths.newBrandPage} element={<NewBrandPage />} />
+          <Route path={paths.importBrands} element={<ImportBrands />} />
+          <Route path={paths.profilePage(":userId")} element={<EditProfilePage />} />
+          <Route path={paths.profilePageAnalytics(":userId")} element={<ProfilePageAnalytics />} />
+          <Route path={paths.subscriptions} element={<AccessSubscriptions />} />
+          <Route path={paths.applicantForms} element={<ProfessionalForm />} />
+          <Route path={paths.specialities} element={<Specialities />} />
+          <Route path={paths.newSpeciality} element={<AddSpecialities />} />
+          <Route path={paths.speciality(":id")} element={<EditSpecialities />} />
+          <Route path={paths.loginActivity} element={<LoginLogs />} />
 
-          <Route path="/specialities" element={<Specialities />} />
-          <Route path="/add-specialities" element={<AddSpecialities />} />
-          <Route path="/edit-specialities/:id" element={<EditSpecialities />} />
+          {/* Access cards */}
+          <Route path={paths.cards} element={<BusinessCard />} />
+          <Route path={paths.newCard} element={<CreateBusinessCard />} />
+          <Route path={paths.card(":id")} element={<EditBusinessCard />} />
+          <Route path={paths.orders} element={<AccessOrders />} />
+          {/* One order, opened over the list. The order email links here (through /access-orders/:id). */}
+          <Route path={paths.order(":id")} element={<AccessOrders />} />
+          <Route path={paths.pricing} element={<AccessPricing />} />
+          <Route path={paths.cardAnalytics} element={<AccessCardAnalytics />} />
 
-          <Route path="/form" element={<ProfessionalForm />} />
-          <Route path="/digital-card" element={<BusinessCard />} />
-          <Route path="/addBusinessCard" element={<CreateBusinessCard />} />
-          <Route path="/editBusinessCard/:id" element={<EditBusinessCard />} />
-          <Route path="/journal-categories" element={<JournalCategory />} />
-          <Route path="/authors" element={<Authors />} />
-          <Route path="/journals" element={<Journal />} />
-          <Route path="/add-journal" element={<AddJournal />} />
-          <Route path="/edit-journal/:id" element={<EditJournal />} />
-          <Route path="/journal-topics" element={<JournalTopics />} />
-          <Route path="/journal-topics/add" element={<AddJournalTopic />} />
-          <Route
-            path="/journal-topics/edit/:id"
-            element={<EditJournalTopic />}
-          />
-          <Route path="/journal-topics/:id" element={<JournalTopicDetails />} />
-          <Route path="/journal-faqs" element={<JournalFaq />} />
-          <Route path="/education" element={<Education />} />
-          <Route path="/add-education" element={<AddEducation />} />
-          <Route path="/edit-education/:id" element={<EditEducation />} />
-          <Route path="/events" element={<Event />} />
-          <Route path="/add-event" element={<AddEvent />} />
-          <Route path="/edit-event/:id" element={<EditEvent />} />
-          <Route path="/shop" element={<Shop />} />
-          <Route path="/shop/tags" element={<ProductTags />} />
-          <Route path="/add-shop" element={<AddShop />} />
-          <Route path="/edit-shop/:id" element={<EditShop />} />
-          <Route path="/directory" element={<Directroy />} />
-          <Route path="/podcast-schedule" element={<PodcastSchedule />} />
-          <Route
-            path="/add-podcast-schedule"
-            element={<AddPodcastSchedule />}
-          />
-          <Route
-            path="/edit-podcast-schedule/:id"
-            element={<EditPodcastSchedule />}
-          />
-          <Route path="/access-orders" element={<AccessOrders />} />
-          {/* The admin's order email links straight to one order. */}
-          <Route path="/access-orders/:id" element={<AccessOrders />} />
-          <Route path="/access-subscriptions" element={<AccessSubscriptions />} />
-          <Route path="/access-pricing" element={<AccessPricing />} />
-          <Route path="/ads" element={<Ads />} />
-          <Route path="/add-ad" element={<AddAd />} />
-          <Route path="/edit-ad/:id" element={<AddAd />} />
-          <Route path="/view-ad/:id" element={<ViewAd />} />
-          <Route path="/access-analytics" element={<AccessCardAnalytics />} />
-          <Route path="/partner-inquiries" element={<PartnerInquiries />} />
-          <Route path="/view-partner-inquiry/:id" element={<ViewPartnerInquiry />} />
-          <Route path="/feature-requests" element={<FeatureRequests />} />
-          <Route path="/newsletter" element={<NewsletterSubscribers />} />
-          <Route path="/home-page" element={<HomeSettings />} />
-          <Route path="/search-terms" element={<SearchTerms />} />
-          <Route path="/pages" element={<ProfilePages />} />
-          <Route path="/pages/new" element={<NewBrandPage />} />
-          <Route path="/pages/:userId" element={<EditProfilePage />} />
-          <Route path="/pages/:userId/analytics" element={<ProfilePageAnalytics />} />
-          <Route path="/magazine" element={<MagazineIssues />} />
-          <Route path="/magazine/add" element={<IssueForm />} />
-          <Route path="/magazine/edit/:id" element={<IssueForm />} />
-          <Route path="/watch/videos" element={<WatchVideos />} />
-          <Route path="/watch/videos/:id" element={<EditVideo />} />
-          <Route path="/watch/series" element={<WatchSeries />} />
-          <Route path="/directory-applications" element={<DirectoryApplications />} />
-          <Route path="/directory-applications/add" element={<AddDirectoryListing />} />
-          <Route path="/directory-applications/edit/:id" element={<EditDirectoryListing />} />
-          <Route path="/directory-applications/:id" element={<ViewDirectoryApplication />} />
-          <Route path="/directory-claims" element={<ListingClaims />} />
+          {/* Directory */}
+          <Route path={paths.directoryApplications} element={<DirectoryApplications />} />
+          <Route path={paths.newDirectoryListing} element={<AddDirectoryListing />} />
+          <Route path={paths.directoryApplication(":id")} element={<ViewDirectoryApplication />} />
+          <Route path={paths.editDirectoryListing(":id")} element={<EditDirectoryListing />} />
+          <Route path={paths.listingClaims} element={<ListingClaims />} />
+          <Route path={paths.directorySections} element={<Directroy />} />
+
+          {/* Inquiries */}
+          <Route path={paths.partnerInquiries} element={<PartnerInquiries />} />
+          <Route path={paths.partnerInquiry(":id")} element={<ViewPartnerInquiry />} />
+          <Route path={paths.featureRequests} element={<FeatureRequests />} />
+          <Route path={paths.newsletter} element={<NewsletterSubscribers />} />
+
+          {/* Journal */}
+          <Route path={paths.articles} element={<Journal />} />
+          <Route path={paths.newArticle} element={<AddJournal />} />
+          <Route path={paths.article(":id")} element={<EditJournal />} />
+          <Route path={paths.journalCategories} element={<JournalCategory />} />
+          <Route path={paths.authors} element={<Authors />} />
+          <Route path={paths.journalFaqs} element={<JournalFaq />} />
+
+          {/* Topics */}
+          <Route path={paths.topics} element={<JournalTopics />} />
+          <Route path={paths.newTopic} element={<AddJournalTopic />} />
+          <Route path={paths.topic(":id")} element={<TopicScreen />} />
+          <Route path={paths.editTopic(":id")} element={<EditJournalTopic />} />
+
+          {/* Shop */}
+          <Route path={paths.products} element={<Shop />} />
+          <Route path={paths.newProduct} element={<AddShop />} />
+          <Route path={paths.product(":id")} element={<EditShop />} />
+          <Route path={paths.productTags} element={<ProductTags />} />
+
+          {/* Media */}
+          <Route path={paths.magazine} element={<MagazineIssues />} />
+          <Route path={paths.newIssue} element={<IssueForm />} />
+          <Route path={paths.issue(":id")} element={<IssueForm />} />
+          <Route path={paths.videos} element={<WatchVideos />} />
+          <Route path={paths.video(":id")} element={<EditVideo />} />
+          <Route path={paths.videoSeries} element={<WatchSeries />} />
+          <Route path={paths.podcastSchedule} element={<PodcastSchedule />} />
+          <Route path={paths.newPodcastScheduleItem} element={<AddPodcastSchedule />} />
+          <Route path={paths.podcastScheduleItem(":id")} element={<EditPodcastSchedule />} />
+
+          {/* Discover */}
+          <Route path={paths.education} element={<Education />} />
+          <Route path={paths.newEducationItem} element={<AddEducation />} />
+          <Route path={paths.educationItem(":id")} element={<EditEducation />} />
+          <Route path={paths.events} element={<Event />} />
+          <Route path={paths.newEvent} element={<AddEvent />} />
+          <Route path={paths.event(":id")} element={<EditEvent />} />
+
+          {/* Ads */}
+          <Route path={paths.ads} element={<Ads />} />
+          <Route path={paths.newAd} element={<AddAd />} />
+          <Route path={paths.ad(":id")} element={<ViewAd />} />
+          <Route path={paths.editAd(":id")} element={<AddAd />} />
+
+          {/* Website */}
+          <Route path={paths.homePage} element={<HomeSettings />} />
+          <Route path={paths.searchTerms} element={<SearchTerms />} />
+
+          {/* Admins, and the signed-in admin's account */}
+          <Route path={paths.admins} element={<AdminUser />} />
+          <Route path={paths.newAdmin} element={<AddAdmin />} />
+          <Route path={paths.account} element={<ViewAdmin />} />
+          <Route path={paths.changePassword} element={<ChangePassword />} />
+
+          {MOVED_PATHS.map(([from, to]) => (
+            <Route key={from} path={from} element={<Moved to={to} />} />
+          ))}
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </Router>

@@ -19,6 +19,7 @@ import {
 import styles from "./JournalTopics.module.scss";
 import { apiErrorMessage } from "../../utils/apiError";
 import type { JournalTopic } from "../../types/journal";
+import { paths } from "../../paths";
 
 const { Search } = Input;
 
@@ -189,7 +190,7 @@ const JournalTopics = () => {
               type="button"
               className={`${styles.iconButton} ${styles.iconButtonEdit}`}
               onClick={() =>
-                navigate(`/journal-topics/edit/${record.id}`)
+                navigate(paths.editTopic(record.id))
               }
             >
               <EditOutlined />
@@ -202,7 +203,7 @@ const JournalTopics = () => {
               type="button"
               className={`${styles.iconButton} ${styles.iconButtonEdit}`}
               onClick={() =>
-                navigate(`/journal-topics/${record.id}`)
+                navigate(paths.topic(record.id))
               }
             >
               <SettingOutlined />
@@ -229,10 +230,11 @@ const JournalTopics = () => {
       {/* HEADER */}
       <div className={styles.headerCard}>
         <div>
-          <h3 className={styles.headerTitle}>Journal Topics</h3>
+          <h3 className={styles.headerTitle}>Topics</h3>
 
           <p className={styles.headerSubtitle}>
-            Manage reusable topics and tags for Journal articles.
+            Topics tie Journal articles, shop products, podcast guests, videos and professionals together. Each has
+            its own page on the website, and can show on the home page.
           </p>
         </div>
 
@@ -247,7 +249,7 @@ const JournalTopics = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate("/journal-topics/add")}
+            onClick={() => navigate(paths.newTopic)}
           >
             Add Topic
           </Button>

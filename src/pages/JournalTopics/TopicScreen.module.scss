@@ -1,0 +1,236 @@
+/* The topic screen (TopicScreen, TopicItemsTab, TopicAi). Colours are the tokens in index.css. */
+
+.block {
+  margin-bottom: 16px;
+}
+
+.loading {
+  padding: 24px;
+  text-align: center;
+}
+
+.muted {
+  color: var(--color-text-tertiary);
+}
+
+.hint {
+  margin: 0 0 12px;
+  color: var(--color-text-secondary);
+}
+
+.sub {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+}
+
+.blockTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.tabBadge {
+  margin-left: 6px;
+}
+
+/* ---------- a kind's tab ---------- */
+
+.tab {
+  padding: 4px 4px 8px;
+}
+
+.itemCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.thumb {
+  flex: none;
+  background: var(--color-surface-muted);
+  color: var(--color-text-tertiary);
+}
+
+.itemText {
+  min-width: 0;
+}
+
+.itemTitle {
+  font-weight: 600;
+}
+
+.aiTag {
+  cursor: help;
+}
+
+.addBar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.addPicker {
+  flex: 1;
+  min-width: 0;
+}
+
+.listHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.dragHandle {
+  cursor: grab;
+  color: var(--color-text-tertiary);
+}
+
+.dropTarget td {
+  border-top: 2px solid var(--color-primary);
+}
+
+.suggestions {
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 10px;
+  background: var(--color-surface-muted);
+}
+
+.suggestionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.suggestion {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(200px, 1.4fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+
+  & + & {
+    border-top: 1px solid var(--color-border);
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.suggestionWhy {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+/* Paragraph tags and podcast guests: plain lists. */
+.plainList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.plainItem {
+  padding: 10px 0;
+
+  & + & {
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+/* ---------- the AI ---------- */
+
+.ai {
+  padding: 8px 10px;
+}
+
+.aiHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.working {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 12px;
+  color: var(--color-text-secondary);
+}
+
+.history {
+  margin-top: 12px;
+}
+
+.runActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.report {
+  margin: 8px 0 12px;
+}
+
+.reportHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--color-text-secondary);
+}
+
+.reportSummary {
+  margin: 8px 0;
+  font-weight: 600;
+}
+
+.reportFilter {
+  margin-bottom: 8px;
+}
+
+.tokens {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.modalAlert {
+  margin-bottom: 12px;
+}
+
+.modes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modeHint {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.limits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 16px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

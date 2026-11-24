@@ -11,6 +11,7 @@ import {
 } from "../../services/Api/PartnershipApi";
 import styles from "./PartnerInquiries.module.scss";
 import type { PartnershipInquiry } from "../../types/content";
+import { paths } from "../../paths";
 
 const { Search } = Input;
 
@@ -172,7 +173,7 @@ const PartnerInquiries = () => {
             <button
               type="button"
               className={`${styles.iconButton} ${styles.iconButtonView}`}
-              onClick={() => navigate(`/view-partner-inquiry/${record.id}`)}
+              onClick={() => navigate(paths.partnerInquiry(record.id))}
             >
               <EyeOutlined />
             </button>

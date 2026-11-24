@@ -40,17 +40,17 @@ const choose = async (combobox: HTMLElement, label: string) => {
 const type = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
 
 // A pattern: after a refused save the button's loading icon stays in jsdom (its leave animation never ends).
-const create = () => fireEvent.click(screen.getByRole("button", { name: /Create Business Card/ }));
+const create = () => fireEvent.click(screen.getByRole("button", { name: /Create Access Card/ }));
 
 describe("Create card: professional or brand", () => {
   it("starts as a professional's card, which needs a title, and makes a brand's without one", async () => {
     vi.mocked(axios.get).mockResolvedValue({ data: { data: [], rows: [] } });
     vi.mocked(axios.post).mockResolvedValue({ data: { data: { id: 9 } } });
     render(
-      <MemoryRouter initialEntries={["/addBusinessCard"]}>
+      <MemoryRouter initialEntries={["/access/cards/new"]}>
         <Routes>
-          <Route path="/addBusinessCard" element={<CreateBusinessCard />} />
-          <Route path="/digital-card" element={<p>Card list</p>} />
+          <Route path="/access/cards/new" element={<CreateBusinessCard />} />
+          <Route path="/access/cards" element={<p>Card list</p>} />
         </Routes>
       </MemoryRouter>,
     );

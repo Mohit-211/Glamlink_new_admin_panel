@@ -22,6 +22,7 @@ import {
 } from "../../../../services/Api/JournalApi";
 import { useIdParam } from "../../../../utils/routing";
 import { apiErrorStatus } from "../../../../utils/apiError";
+import { paths } from "../../../../paths";
 
 const EditEducation = () => {
   const id = useIdParam();
@@ -56,7 +57,7 @@ const EditEducation = () => {
       // The API answers 404 for an item that doesn't exist (any more).
       if (apiErrorStatus(error) === 404) {
         message.error("This education item doesn't exist; it may have been deleted");
-        navigate("/education");
+        navigate(paths.education);
         return;
       }
       message.error("Failed to load education");
@@ -88,7 +89,7 @@ const EditEducation = () => {
       await UpdateEducation(id, formData);
 
       message.success("Education updated successfully");
-      navigate("/education");
+      navigate(paths.education);
     } catch {
       message.error("Failed to update Education");
     }
@@ -105,15 +106,15 @@ const EditEducation = () => {
           marginBottom: "20px"
         }}>
         <div>
-          <h3>EDUCATION</h3>
+          <h3>Education</h3>
           <p>Manage education articles</p>
         </div>
 
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/education")}
+          onClick={() => navigate(paths.education)}
         >
-          Return to Education Articles
+          Return to Education
         </Button>
       </div>
 
@@ -208,7 +209,7 @@ const EditEducation = () => {
               Update Education
             </Button>
 
-            <Button onClick={() => navigate("/education")}>Cancel</Button>
+            <Button onClick={() => navigate(paths.education)}>Cancel</Button>
           </Space>
         </Form>
       </Card>

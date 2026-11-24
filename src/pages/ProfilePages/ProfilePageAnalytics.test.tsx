@@ -101,9 +101,9 @@ const numbers = (fields: Partial<PageAnalytics> = {}): PageAnalytics => ({
 
 const renderPage = () =>
   render(
-    <MemoryRouter initialEntries={["/pages/812/analytics"]}>
+    <MemoryRouter initialEntries={["/professionals/pages/812/analytics"]}>
       <Routes>
-        <Route path="/pages/:userId/analytics" element={<ProfilePageAnalytics />} />
+        <Route path="/professionals/pages/:userId/analytics" element={<ProfilePageAnalytics />} />
       </Routes>
     </MemoryRouter>,
   );

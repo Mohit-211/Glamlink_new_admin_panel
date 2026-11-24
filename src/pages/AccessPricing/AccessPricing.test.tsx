@@ -67,7 +67,7 @@ const answerGets = (routes: Record<string, unknown>) => {
 
 const renderTab = (tab: string) =>
   render(
-    <MemoryRouter initialEntries={[`/access-pricing?tab=${tab}`]}>
+    <MemoryRouter initialEntries={[`/access/pricing?tab=${tab}`]}>
       <AccessPricing />
     </MemoryRouter>,
   );

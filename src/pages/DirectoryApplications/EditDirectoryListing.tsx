@@ -62,7 +62,7 @@ const EditDirectoryListing = () => {
                   Try again
                 </Button>
               )}
-              <Button onClick={() => navigate(back)}>Back to directory applications</Button>
+              <Button onClick={() => navigate(back)}>Back to Applications</Button>
             </>
           }
         />

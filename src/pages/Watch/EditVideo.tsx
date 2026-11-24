@@ -30,6 +30,7 @@ import { SOURCES, STATUSES, formatDuration, seriesOptions, youtubeUrl } from "./
 import styles from "./Watch.module.scss";
 import type { JournalTopic } from "../../types/journal";
 import type { Video, VideoFields, VideoSeries, VideoStatus } from "../../types/video";
+import { paths } from "../../paths";
 
 interface DetailsValues {
   title: string;
@@ -175,7 +176,7 @@ const VideoDetails = ({ video, series, onSaved }: DetailsProps) => {
 
 type Load = "loading" | "ready" | "missing" | "failed";
 
-/** One video (/watch/videos/:id): its fields, its people and its topics, each saved on its own. */
+/** One video (/media/videos/:id): its fields, its people and its topics, each saved on its own. */
 const EditVideo = () => {
   const id = useIdParam();
   const navigate = useNavigate();
@@ -232,7 +233,7 @@ const EditVideo = () => {
       <PageHeader
         title={video?.title ?? "Video"}
         subtitle={video ? `${video.series?.name ?? "No series"} · ${published ? "Published" : "Draft"}` : undefined}
-        back="/watch/videos"
+        back={paths.videos}
         extra={
           video && (
             <>
@@ -261,7 +262,7 @@ const EditVideo = () => {
       {load === "missing" && (
         <Panel>
           <Empty description="There's no such video.">
-            <Button onClick={() => navigate("/watch/videos")}>Back to the videos</Button>
+            <Button onClick={() => navigate(paths.videos)}>Back to the videos</Button>
           </Empty>
         </Panel>
       )}

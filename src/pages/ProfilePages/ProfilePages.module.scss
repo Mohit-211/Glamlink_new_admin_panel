@@ -655,3 +655,39 @@
 .taggedSection {
   margin-bottom: 24px;
 }
+
+/* ---------- import brands ---------- */
+
+.importText {
+  margin: 0 0 12px;
+  color: var(--color-text-secondary);
+}
+
+.importActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.importCounts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.importDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.importWarning {
+  font-size: 12px;
+  color: var(--color-warning);
+}

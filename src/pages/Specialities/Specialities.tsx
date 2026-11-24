@@ -19,6 +19,7 @@ import {
 import { apiErrorStatus } from "../../utils/apiError";
 import { singleSorter, type TableChangeHandler, type TableParams, type WithIndex } from "../../utils/table";
 import type { ProfessionUser, Speciality } from "../../types/catalog";
+import { paths } from "../../paths";
 
 const Specialities = () => {
 	const navigate = useNavigate();
@@ -133,7 +134,7 @@ const Specialities = () => {
 			console.error("Error: ", e);
 
 			if (apiErrorStatus(e) === 403) {
-				navigate("/error401");
+				navigate(paths.forbidden);
 				console.error("You do not have access to this page as a sub-admin.");
 			} else if (apiErrorStatus(e) === 500) {
 				// An expired session is handled for every request (utils/session.ts).
@@ -227,11 +228,11 @@ const Specialities = () => {
 	};
 
 	const navigateToAddBlog = () => {
-		navigate("/add-specialities");
+		navigate(paths.newSpeciality);
 	};
 
 	const navigateToEditBlog = (event: React.MouseEvent<HTMLElement>, id: number) => {
-		navigate(`/edit-specialities/${id}`);
+		navigate(paths.speciality(id));
 	};
 
 	return (
@@ -244,7 +245,7 @@ const Specialities = () => {
 				    marginBottom: "20px"
 				}}>
 				<div>
-					<h3 className="page-title">SPECIALITIES</h3>
+					<h3 className="page-title">Specialities</h3>
 					<p className="page-sub-title">Create,View & Edit Specialities</p>
 				</div>
 				<div

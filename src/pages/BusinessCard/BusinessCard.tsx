@@ -55,6 +55,7 @@ import SafeHtml from "../../components/SafeHtml";
 import { singleSorter, type TableChangeHandler, type TableParams, type WithIndex } from "../../utils/table";
 import type { BusinessCard, CardType, PurchaseInfo } from "../../types/businessCard";
 import { CARD_TYPE_COLOR, CARD_TYPE_LABEL, CARD_TYPE_OPTIONS, cardTypeOf } from "./cardType";
+import { paths } from "../../paths";
 
 const BusinessCard = () => {
   const navigate = useNavigate();
@@ -98,7 +99,7 @@ const BusinessCard = () => {
     } catch (e) {
       console.error(e);
       if (apiErrorStatus(e) === 403) {
-        navigate("/error401");
+        navigate(paths.forbidden);
       }
     } finally {
       setLoading(false);
@@ -417,7 +418,7 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
       align: "center",
       render: (_, record) => (
         <Space size={6} wrap={false}>
-          <Tooltip title="View Business Card">
+          <Tooltip title="View Card">
             <button
               type="button"
               style={viewBtnStyle}
@@ -427,17 +428,17 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
             </button>
           </Tooltip>
 
-          <Tooltip title="Edit Business Card">
+          <Tooltip title="Edit Card">
             <button
               type="button"
               style={editBtnStyle}
-              onClick={() => navigate(`/editBusinessCard/${record.id}`)}
+              onClick={() => navigate(paths.card(record.id))}
             >
               <EditOutlined />
             </button>
           </Tooltip>
 
-          <Tooltip title="Delete Business Card">
+          <Tooltip title="Delete Card">
             <button
               type="button"
               style={deleteBtnStyle}
@@ -455,18 +456,18 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
     if (!ids.length) return;
 
     Modal.confirm({
-      title: "Delete Business Card",
+      title: "Delete Card",
       content: `Are you sure you want to delete ${
-        ids.length > 1 ? "these business cards" : "this business card"
+        ids.length > 1 ? "these cards" : "this card"
       }?`,
       onOk: async () => {
         try {
           await DeleteBusinessCard(ids);
-          message.success("Business Card deleted successfully");
+          message.success("Card deleted successfully");
 
           getData();
         } catch {
-          message.error("Failed to delete Business Card");
+          message.error("Failed to delete the card");
         }
       },
     });
@@ -601,7 +602,7 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
             className="page-title"
             style={{ margin: 0, fontWeight: 700, fontSize: 20 }}
           >
-            {view === "drafts" ? "Guest Drafts" : "Digital Business Cards"}
+            {view === "drafts" ? "Guest Drafts" : "Cards"}
           </h3>
           <p
             className="page-sub-title"
@@ -609,7 +610,7 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
           >
             {view === "drafts"
               ? "Cards guests started on the website without choosing a plan or paying yet. Each goes live once its guest does."
-              : "Review, manage, and approve submitted digital business cards."}
+              : "Review, manage, and approve submitted Access cards."}
           </p>
         </div>
 
@@ -640,7 +641,7 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
           <Input
             type="search"
             onChange={(e) => onSearch(e.target.value)}
-            placeholder="Search Business Card..."
+            placeholder="Search cards..."
             style={{ height: "42px", borderRadius: "6px" }}
             prefix={<SearchOutlined />}
             size="large" />
@@ -651,7 +652,7 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
               borderRadius: "6px",
               marginLeft: "8px"
             }}
-            onClick={() => navigate("/addBusinessCard")}
+            onClick={() => navigate(paths.newCard)}
             icon={<PlusOutlined />}
             size="large" />
         </div>
@@ -798,7 +799,7 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
                           textDecoration: "underline",
                         }}
                       >
-                        Live Digital Card Link
+                        Live Card Link
                       </a>
                     </div>
                   )}
@@ -1355,10 +1356,10 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
         >
           <div style={{ marginBottom: 20 }}>
             <h2 style={{ marginBottom: 6, fontWeight: 700 }}>
-              Digital Business Card QR
+              Access Card QR
             </h2>
             <p style={{ color: "var(--color-text-secondary)", margin: 0 }}>
-              Scan this QR code to instantly access the digital business card.
+              Scan this QR code to open the Access card.
             </p>
             <div
               style={{
@@ -1384,7 +1385,7 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
           >
             <img
               src={selectedCard?.business_card_qr ?? undefined}
-              alt="Business Card QR"
+              alt="Access card QR code"
               style={{
                 width: 280,
                 height: 280,
@@ -1457,7 +1458,7 @@ const getPurchaseInfo = (record: BusinessCard): PurchaseInfo => {
             </div>
             <div style={{ fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.6 }}>
               Open your phone camera and scan this QR code to instantly access
-              this digital business card. Perfect for sharing contact details,
+              this Access card. Perfect for sharing contact details,
               booking information, social profiles, and portfolio links.
             </div>
           </div>

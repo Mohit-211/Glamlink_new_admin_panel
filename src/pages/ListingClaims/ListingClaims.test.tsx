@@ -54,7 +54,7 @@ const answer = (rows: ListingClaim[]) =>
 
 const listCalls = () => vi.mocked(axios.get).mock.calls.filter(([url]) => url === CLAIMS_URL);
 
-const renderClaims = (path = "/directory-claims") =>
+const renderClaims = (path = "/directory/claims") =>
   render(
     <MemoryRouter initialEntries={[path]}>
       <ListingClaims />
@@ -74,7 +74,7 @@ describe("Listing claims", () => {
     expect(await screen.findByText("Jane Smith")).toBeInTheDocument();
     expect(axios.get).toHaveBeenCalledWith(CLAIMS_URL, { params: { status: "pending", page: 1, limit: 50 } });
     const row = rowOf("Jane Smith");
-    expect(within(row).getByRole("link", { name: "Jane Smith" })).toHaveAttribute("href", "/editBusinessCard/12");
+    expect(within(row).getByRole("link", { name: "Jane Smith" })).toHaveAttribute("href", "/access/cards/12");
     expect(within(row).getByText("Glow Skin Studio")).toBeInTheDocument();
     expect(within(row).getByRole("link", { name: "jane@glow.example" })).toHaveAttribute("href", "mailto:jane@glow.example");
     expect(within(row).getByText("Professional")).toBeInTheDocument();
@@ -107,6 +107,28 @@ describe("Listing claims", () => {
     expect(listCalls()).toHaveLength(2);
     expect(recount).toHaveBeenCalled();
     stop();
+  });
+
+  it("since Nov 24, says which claims already hide their Google listing, before anyone checks them", async () => {
+    // A live card's claim waiting to be checked, and a draft's, which hides nothing yet.
+    const live = claim({ hides_listing: true });
+    const draft = claim({ business_card_id: 14, name: "Ana Ruiz", status: "draft", hides_listing: false });
+    answer([live, draft]);
+    renderClaims();
+
+    await screen.findByText("Jane Smith");
+    expect(within(rowOf("Jane Smith")).getByText("Hidden from Google results")).toBeInTheDocument();
+    expect(within(rowOf("Ana Ruiz")).getByText("Still in Google results")).toBeInTheDocument();
+
+    fireEvent.click(within(rowOf("Jane Smith")).getByRole("button", { name: /Verify/ }));
+    const verify = await dialogTitled("Verify this claim?");
+    expect(within(verify).getByText(/already out of the directory's Google results/)).toBeInTheDocument();
+    fireEvent.click(within(verify).getByRole("button", { name: "Cancel" }));
+
+    // Rejecting a live card's claim brings its listing back, verified or not.
+    fireEvent.click(within(rowOf("Jane Smith")).getByRole("button", { name: /Reject/ }));
+    const reject = await dialogTitled("Reject this claim?");
+    expect(within(reject).getByText("The Google listing shows in the directory again.")).toBeInTheDocument();
   });
 
   it("shows why a claim can't be verified when another card has the listing", async () => {

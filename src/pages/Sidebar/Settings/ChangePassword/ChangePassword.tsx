@@ -5,13 +5,14 @@ import { useNavigate } from "react-router";
 import { ChangeAdminPassword } from "../../../../services/Api/Api";
 import { apiErrorMessage } from "../../../../utils/apiError";
 import { clearSession } from "../../../../utils/session";
+import { paths } from "../../../../paths";
 
 const { Title, Text } = Typography;
 
 const ChangePassword = () => {
   const navigate = useNavigate();
   const navigateToDashboard = () => {
-    navigate("/");
+    navigate(paths.dashboard);
   };
 
   const [oldPassword, setOldPassword] = useState("");

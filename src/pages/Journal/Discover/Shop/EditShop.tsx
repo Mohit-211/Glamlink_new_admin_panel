@@ -31,6 +31,7 @@ import { showFieldError } from "../../../../utils/formErrors";
 import ProductSiteFields, { appendProductSiteFields, productSiteValues } from "./ProductSiteFields";
 import { useIdParam } from "../../../../utils/routing";
 import type { JournalTopic, Shop } from "../../../../types/journal";
+import { paths } from "../../../../paths";
 
 const EditShop = () => {
   const id = useIdParam();
@@ -59,7 +60,7 @@ const EditShop = () => {
       const shop = result.data?.data;
 
       if (!shop) {
-        message.error("Shop not found");
+        message.error("Product not found");
         return;
       }
 
@@ -104,10 +105,10 @@ const EditShop = () => {
       // The API answers 404 for a product that doesn't exist (any more).
       if (apiErrorStatus(error) === 404) {
         message.error("This product doesn't exist; it may have been deleted");
-        navigate("/shop");
+        navigate(paths.products);
         return;
       }
-      message.error("Failed to load shop");
+      message.error("Failed to load the product");
     }
   };
 
@@ -146,7 +147,7 @@ const EditShop = () => {
       const values = await form.validateFields();
 
       // ==========================
-      // Update Shop
+      // Update the product
       // ==========================
 
       const formData = new FormData();
@@ -246,10 +247,10 @@ const EditShop = () => {
       }
 
       message.success(
-        "Shop updated successfully",
+        "Product updated successfully",
       );
 
-      navigate("/shop");
+      navigate(paths.products);
     } catch (error) {
       console.error(error);
 
@@ -257,7 +258,7 @@ const EditShop = () => {
       message.error(
         showFieldError(form, error) ||
           apiErrorMessage(error) ||
-          "Failed to update Shop",
+          "Failed to update product",
       );
     }
   };
@@ -273,20 +274,20 @@ const EditShop = () => {
           marginBottom: "20px"
         }}>
         <div>
-          <h3>Shop</h3>
-          <p>Manage Shop</p>
+          <h3>Products</h3>
+          <p>Change this product</p>
         </div>
 
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/shop")}
+          onClick={() => navigate(paths.products)}
         >
-          Return to Shop Articles
+          Return to Products
         </Button>
       </div>
 
       {/* CARD */}
-      <Card title="Edit Shop">
+      <Card title="Edit Product">
         <Form
           form={form}
           layout="vertical"
@@ -385,11 +386,11 @@ const EditShop = () => {
             }}
           >
             <Form.Item
-              label="Shop Topics"
+              label="Topics"
               style={{
                 marginBottom: 0,
               }}
-              extra="Select one or more reusable topics for this shop"
+              extra="Select one or more reusable topics for this product"
             >
               <Select
                 mode="multiple"
@@ -458,12 +459,12 @@ const EditShop = () => {
               type="primary"
               onClick={handleSubmit}
             >
-              Update Shop
+              Update Product
             </Button>
 
             <Button
               onClick={() =>
-                navigate("/shop")
+                navigate(paths.products)
               }
             >
               Cancel

@@ -15,6 +15,7 @@ import { apiErrorStatus } from "../../utils/apiError";
 
 import { useIdParam } from "../../utils/routing";
 import type { Speciality } from "../../types/catalog";
+import { paths } from "../../paths";
 
 
 const EditSpecialities = () => {
@@ -48,7 +49,7 @@ const EditSpecialities = () => {
 				if (res.status === 200) {
 					message.success("Profession Update Successfully!");
 				}
-				navigate("/specialities");
+				navigate(paths.specialities);
 			})
 			.catch((err) => {
 				if (apiErrorStatus(err) === 401) {
@@ -60,7 +61,7 @@ const EditSpecialities = () => {
 	};
 
 	const navigateToService = () => {
-		navigate("/specialities");
+		navigate(paths.specialities);
 	};
 
 	return (
@@ -73,7 +74,7 @@ const EditSpecialities = () => {
 				    marginBottom: "20px"
 				}}>
 				<div>
-					<h3 className="page-title">Update speciality</h3>
+					<h3 className="page-title">Edit Speciality</h3>
 					<p className="page-sub-title">Edit Details of Speciality</p>
 				</div>
 				<div>

@@ -65,6 +65,7 @@ import type {
   Shop,
 } from "../../../types/journal";
 import type { BusinessCard } from "../../../types/businessCard";
+import { paths } from "../../../paths";
 
 const SectionCard = ({
   icon,
@@ -379,7 +380,7 @@ const AddBlog = () => {
       warnUnmatchedMentions(createResponse?.data?.data?.unmatched_mentions);
 
       if (!journalId) {
-        throw new Error("Journal created but journal ID was not returned");
+        throw new Error("Article created but its ID was not returned");
       }
 
       // Sync paragraph-level topic tags picked up from the editor content.
@@ -410,26 +411,26 @@ const AddBlog = () => {
         // per-paragraph topic tags failed to sync. Re-clicking Publish/Save
         // here would create a SECOND journal, so instead of retrying on
         // this page, send the admin straight to the Edit page for the
-        // journal that was just created — its "Update journal" button
+        // article that was just created — its "Update article" button
         // safely retries the tag sync without duplicating anything.
         const failedNames = topics
           .filter((t) => failedTopicIds.includes(t.id))
           .map((t) => t.name);
 
         message.warning(
-          `Journal saved, but the paragraph tag for "${
+          `Article saved, but the paragraph tag for "${
             failedNames.join(", ") || failedTopicIds.join(", ")
-          }" couldn't sync. Opening the journal in Edit — click "Update journal" there to retry.`,
+          }" couldn't sync. Opening the article in Edit — click "Update article" there to retry.`,
           6,
         );
-        navigate(`/edit-journal/${journalId}`);
+        navigate(paths.article(journalId));
       } else {
         message.success(
           status === "draft"
             ? "Draft saved successfully"
-            : "Journal published successfully",
+            : "Article published successfully",
         );
-        navigate("/journals");
+        navigate(paths.articles);
       }
     } catch (err) {
       console.error(err);
@@ -439,7 +440,7 @@ const AddBlog = () => {
         showFieldError(form, err) ||
           apiErrorMessage(err) ||
           errorMessage(err) ||
-          "Failed to create journal",
+          "Failed to create article",
       );
     } finally {
       setSubmitting(false);
@@ -451,18 +452,18 @@ const AddBlog = () => {
       {/* HEADER */}
       <div className={styles.headerCard}>
         <div>
-          <h3 className={styles.headerTitle}>Add Journal</h3>
+          <h3 className={styles.headerTitle}>Add Article</h3>
           <p className={styles.headerSubtitle}>
-            Write a new journal entry, attach downloads, and publish or save it
+            Write a new article, attach downloads, and publish or save it
             as a draft.
           </p>
         </div>
 
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/journals")}
+          onClick={() => navigate(paths.articles)}
         >
-          Return to Journals
+          Return to Articles
         </Button>
       </div>
 
@@ -470,7 +471,7 @@ const AddBlog = () => {
         {/* BASIC DETAILS */}
         <SectionCard
           icon={<FormOutlined />}
-          title="Journal details"
+          title="Article details"
           hint="Title, author, category and schedule"
         >
           <Row gutter={20}>
@@ -481,7 +482,7 @@ const AddBlog = () => {
                 rules={[{ required: true, message: "Title is required" }]}
               >
                 <Input
-                  placeholder="Enter journal title"
+                  placeholder="Enter article title"
                   onChange={(e) => {
                     if (!slugManuallyEdited) {
                       form.setFieldValue("slug", generateSlug(e.target.value));
@@ -549,12 +550,12 @@ const AddBlog = () => {
             <Col xs={24}>
               <Form.Item
                 name="shop_ids"
-                label="Shops"
-                tooltip="Optional — you can select multiple shops for this journal"
+                label="Products"
+                tooltip="Optional — you can select multiple products for this article"
               >
                 <Select
                   mode="multiple"
-                  placeholder="Select shops"
+                  placeholder="Select products"
                   showSearch
                   optionFilterProp="children"
                   allowClear
@@ -601,7 +602,7 @@ const AddBlog = () => {
         <SectionCard
           icon={<FileTextOutlined />}
           title="Content"
-          hint="Full journal body, images and video — type @ to tag a business"
+          hint="Full article body, images and video — type @ to tag a business"
         >
           <div
             style={{
@@ -634,7 +635,7 @@ const AddBlog = () => {
                 topics, then click <strong>Save</strong>. The paragraph gets a
                 purple label showing its topic(s). This is separate from the
                 "Topics" section further down the page, which applies to the
-                entire journal.
+                entire article.
               </div>
             </div>
           </div>
@@ -652,7 +653,7 @@ const AddBlog = () => {
         <SectionCard
           icon={<SearchOutlined />}
           title="SEO"
-          hint="Control how this journal appears in search results and shared links"
+          hint="Control how this article appears in search results and shared links"
         >
           <div
             style={{
@@ -691,7 +692,7 @@ const AddBlog = () => {
               <Form.Item
                 name="seo_title"
                 label="SEO Title / Title Tag"
-                tooltip="Shown as the clickable headline in Google search results and in the browser tab. Defaults to the journal Title if left blank. Aim for under ~60 characters so it isn't cut off."
+                tooltip="Shown as the clickable headline in Google search results and in the browser tab. Defaults to the article's title if left blank. Aim for under ~60 characters so it isn't cut off."
               >
                 <Input
                   maxLength={255}
@@ -729,7 +730,7 @@ const AddBlog = () => {
                     </Tag>
                   </span>
                 }
-                tooltip="The web-address-friendly version of the journal's title, e.g. glamlink.net/journals/your-slug-here. It fills in automatically as you type the Title — edit it directly any time to set a custom URL instead."
+                tooltip="The web-address-friendly version of the article's title, e.g. glamlink.net/journals/your-slug-here. It fills in automatically as you type the Title — edit it directly any time to set a custom URL instead."
                 style={{ marginBottom: 6 }}
               >
                 <div style={{ display: "flex", gap: 8 }}>
@@ -786,7 +787,7 @@ const AddBlog = () => {
         <SectionCard
           icon={<PaperClipOutlined />}
           title="Downloads"
-          hint="Optional files readers can download from this journal"
+          hint="Optional files readers can download from this article"
         >
           <Button
             type="dashed"
@@ -914,9 +915,9 @@ const AddBlog = () => {
         <SectionCard
           icon={<TagsOutlined />}
           title="Topics"
-          hint="Select one or more reusable topics for this journal"
+          hint="Select one or more reusable topics for this article"
         >
-          <Form.Item label="Journal Topics" style={{ marginBottom: 0 }}>
+          <Form.Item label="Topics" style={{ marginBottom: 0 }}>
             <Select
               mode="multiple"
               value={selectedTopicIds}
@@ -937,7 +938,7 @@ const AddBlog = () => {
         <SectionCard
           icon={<InfoCircleOutlined />}
           title="Frequently Asked Questions"
-          hint="Select the FAQs that should be displayed with this journal"
+          hint="Select the FAQs that should be displayed with this article"
         >
           {faqs.length === 0 ? (
             <Empty
@@ -993,7 +994,7 @@ const AddBlog = () => {
               Save as a draft to keep editing later, or publish now.
             </span>
 
-            <Button onClick={() => navigate("/journals")}>Cancel</Button>
+            <Button onClick={() => navigate(paths.articles)}>Cancel</Button>
 
             <Button onClick={() => handleSubmit("draft")} loading={submitting}>
               Save draft
@@ -1004,7 +1005,7 @@ const AddBlog = () => {
               onClick={() => handleSubmit("published")}
               loading={submitting}
             >
-              Publish journal
+              Publish article
             </Button>
           </div>
         </div>

@@ -14,6 +14,7 @@ import dayjs from "dayjs";
 import styles from "./AdsList.module.scss";
 import DateRangeFilter, { lastDays, rangeParams, type DateRange } from "../../components/DateRangeFilter";
 import type { Ad, AdTotals } from "../../types/ads";
+import { paths } from "../../paths";
 
 const { Search } = Input;
 
@@ -225,7 +226,7 @@ const Ads = () => {
             <button
               type="button"
               className={`${styles.iconButton} ${styles.iconButtonView}`}
-              onClick={() => navigate(`/view-ad/${record.id}`)}
+              onClick={() => navigate(paths.ad(record.id))}
             >
               <EyeOutlined />
             </button>
@@ -235,7 +236,7 @@ const Ads = () => {
             <button
               type="button"
               className={`${styles.iconButton} ${styles.iconButtonEdit}`}
-              onClick={() => navigate(`/edit-ad/${record.id}`)}
+              onClick={() => navigate(paths.editAd(record.id))}
             >
               <EditOutlined />
             </button>
@@ -276,7 +277,7 @@ const Ads = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate("/add-ad")}
+            onClick={() => navigate(paths.newAd)}
           >
             Add Ad
           </Button>

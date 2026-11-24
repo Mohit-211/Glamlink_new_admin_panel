@@ -253,7 +253,7 @@ const JournalCategory = () => {
                     marginBottom: "20px"
                 }}>
                 <div>
-                    <h3 className="page-title">JOURNAL CATEGORY</h3>
+                    <h3 className="page-title">Categories</h3>
                     <p className="page-sub-title">
                         View, add, edit, and delete Journal Categories
                     </p>

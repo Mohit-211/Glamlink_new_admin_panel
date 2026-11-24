@@ -33,6 +33,7 @@ import { CSS } from "@dnd-kit/utilities";
 import styles from "./JournalsList.module.scss";
 import { type WithIndex } from "../../../utils/table";
 import type { Journal } from "../../../types/journal";
+import { paths } from "../../../paths";
 
 const { Search } = Input;
 
@@ -111,9 +112,9 @@ const Blogs = () => {
       await UpdateJournalSortOrder({
         journals: newData.map((item) => ({ id: item.id })),
       });
-      message.success("Journal order updated");
+      message.success("Article order updated");
     } catch {
-      message.error("Failed to update journal order");
+      message.error("Failed to update article order");
       getData(); // rollback to server truth
     }
   };
@@ -248,17 +249,17 @@ const Blogs = () => {
       align: "center",
       render: (_, record) => (
         <div className={styles.actionButtons}>
-          <Tooltip title="Edit Journal">
+          <Tooltip title="Edit Article">
             <button
               type="button"
               className={`${styles.iconButton} ${styles.iconButtonEdit}`}
-              onClick={() => navigate(`/edit-journal/${record.id}`)}
+              onClick={() => navigate(paths.article(record.id))}
             >
               <EditOutlined />
             </button>
           </Tooltip>
 
-          <Tooltip title="Delete Journal">
+          <Tooltip title="Delete Article">
             <button
               type="button"
               className={`${styles.iconButton} ${styles.iconButtonDanger}`}
@@ -302,7 +303,7 @@ const Blogs = () => {
       setData(newData);
       setBackupData(newData);
     } catch {
-      message.error("Failed to load journals");
+      message.error("Failed to load articles");
     } finally {
       setLoading(false);
     }
@@ -321,17 +322,17 @@ const Blogs = () => {
 
   const handleDelete = (id: number) => {
     Modal.confirm({
-      title: "Delete Journal",
-      content: "Are you sure you want to delete this journal?",
+      title: "Delete Article",
+      content: "Are you sure you want to delete this article?",
       okText: "Delete",
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
           await DeleteJournal([id]); // send as array
-          message.success("Journal deleted successfully");
+          message.success("Article deleted successfully");
           getData();
         } catch (err) {
-          message.error("Failed to delete Journal");
+          message.error("Failed to delete article");
         }
       },
     });
@@ -341,15 +342,15 @@ const Blogs = () => {
     <div className={styles.page}>
       <div className={styles.headerCard}>
         <div>
-          <h3 className={styles.headerTitle}>Journals</h3>
+          <h3 className={styles.headerTitle}>Articles</h3>
           <p className={styles.headerSubtitle}>
-            Manage all journals — drag the handle to reorder.
+            Manage all Journal articles — drag the handle to reorder.
           </p>
         </div>
 
         <div className={styles.headerActions}>
           <Search
-            placeholder="Search journal..."
+            placeholder="Search articles..."
             allowClear
             onChange={(e) => onSearch(e.target.value)}
             style={{ width: 250 }}
@@ -357,9 +358,9 @@ const Blogs = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate("/add-journal")}
+            onClick={() => navigate(paths.newArticle)}
           >
-            Add Journal
+            Add Article
           </Button>
         </div>
       </div>

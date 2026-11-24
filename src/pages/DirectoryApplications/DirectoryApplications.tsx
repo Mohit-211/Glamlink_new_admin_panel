@@ -19,6 +19,7 @@ import {
 } from "./listing";
 import { useAdminNames } from "./useAdminNames";
 import styles from "./DirectoryApplications.module.scss";
+import { paths } from "../../paths";
 
 const PAGE_SIZE = 50;
 
@@ -233,7 +234,7 @@ const DirectoryApplications = () => {
       dataIndex: "user_id",
       width: 120,
       render: (userId: number | null) =>
-        userId ? <Link to={`/viewProfessionals/${userId}`}>Account #{userId}</Link> : dash,
+        userId ? <Link to={paths.professional(userId)}>Account #{userId}</Link> : dash,
     },
     {
       title: "",
@@ -276,7 +277,7 @@ const DirectoryApplications = () => {
   return (
     <div>
       <PageHeader
-        title="Directory applications"
+        title="Applications"
         subtitle="The website's directory form is retired: new people join through the Access form. These are the applications it sent, and listings added here. Approving one lists the person on the directory and makes their account."
         extra={
           <>
@@ -300,7 +301,7 @@ const DirectoryApplications = () => {
             <Button
               type="primary"
               icon={<PlusOutlined />}
-              onClick={() => navigate(`${LIST_PATH}/add`, { state: fromList })}
+              onClick={() => navigate(paths.newDirectoryListing, { state: fromList })}
             >
               Add listing
             </Button>

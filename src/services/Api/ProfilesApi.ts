@@ -2,6 +2,7 @@ import axios from "axios";
 import { BASE_URL } from "../Host";
 import type { ApiResponse, Paged } from "../../types/api";
 import type {
+  BrandImportResult,
   PageAnalytics,
   PageEducationItem,
   PageListParams,
@@ -37,9 +38,13 @@ const progressOf = (onProgress?: Progress) =>
     : {};
 
 /** Every page, by name: listed or not, with how each stands. */
-export const GetPages = async ({ featured, ...params }: PageListParams = {}) => {
+export const GetPages = async ({ featured, on_map, ...params }: PageListParams = {}) => {
   return axios.get<ApiResponse<Paged<PageRow>>>(`${BASE_URL}profiles/admin/list`, {
-    params: { ...params, ...(featured ? { featured: "true" } : {}) },
+    params: {
+      ...params,
+      ...(featured ? { featured: "true" } : {}),
+      ...(on_map === undefined ? {} : { on_map: String(on_map) }),
+    },
   });
 };
 
@@ -54,14 +59,35 @@ export const UpdatePage = async (userId: Id, fields: PageUpdate) => {
 };
 
 /**
- * A brand page for a brand with no login yet: its account has no password, and the page shows without a card.
- * 409 ACCOUNT_EXISTS (`details.user_id`) when the email has an account: edit that account's page instead.
+ * A brand page for a brand with no login yet: its account has no password, and the page shows without a card. The
+ * email is optional since Nov 24 (add it later, before the claim email). 409 ACCOUNT_EXISTS (`details.user_id`) when
+ * the email has an account: edit that account's page instead.
  */
-export const CreateBrandPage = async (fields: PageUpdate & { name: string; email: string }) => {
+export const CreateBrandPage = async (fields: PageUpdate & { name: string; email?: string }) => {
   return axios.post<ApiResponse<PageView>>(`${BASE_URL}profiles/admin/brands`, fields);
 };
 
-/** Emails the account a "Set your password" link (valid 7 days). 409 ALREADY_CLAIMED once it has a password. */
+/** The CSV to fill in for ImportBrands: every column, and one example brand to delete. */
+export const GetBrandImportTemplate = async () => {
+  return axios.get<Blob>(`${BASE_URL}profiles/admin/brands/import/template`, { responseType: "blob" });
+};
+
+/**
+ * Brands in bulk (Nov 24): each row of the CSV becomes a brand page without a login, as "New brand page" makes one, and
+ * no email is sent. `dryRun` checks every row and makes nothing. 400 INVALID_CSV for a file that can't be read, has no
+ * `name` column or no rows, or holds over 500 rows or 2 MB.
+ */
+export const ImportBrands = async (file: File, { dryRun }: { dryRun: boolean }) => {
+  const form = new FormData();
+  form.append("csv_file", file);
+  form.append("dry_run", String(dryRun));
+  return axios.post<ApiResponse<BrandImportResult>>(`${BASE_URL}profiles/admin/brands/import`, form);
+};
+
+/**
+ * Emails the account a "Set your password" link (valid 7 days). 409 ALREADY_CLAIMED once it has a password; since
+ * Nov 24, 409 NO_EMAIL while it has no email.
+ */
 export const SendPageInvite = async (userId: Id) => {
   return axios.post<ApiResponse<{ sent: boolean; email: string }>>(`${BASE_URL}profiles/admin/${userId}/invite`);
 };

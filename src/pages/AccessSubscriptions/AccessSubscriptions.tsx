@@ -11,21 +11,8 @@ import type { SeatSource, SeatStatus, SubscriptionSeat } from "../../types/acces
 import { date } from "../AccessPricing/pricing";
 import { money } from "../../utils/money";
 import styles from "./AccessSubscriptions.module.scss";
-
-// Pro while active, on trial, or past due (Stripe is retrying a payment).
-const PRO_STATUSES: SeatStatus[] = ["active", "trialing", "past_due"];
-const isPro = (seat: SubscriptionSeat) => PRO_STATUSES.includes(seat.status);
-
-const STATUS: Partial<Record<string, { label: string; color?: string; hint?: string }>> = {
-  active: { label: "Active", color: "green" },
-  trialing: { label: "Trial", color: "cyan" },
-  past_due: { label: "Past due", color: "orange", hint: "A renewal failed and Stripe is retrying; they keep Pro meanwhile." },
-  canceled: { label: "Canceled" },
-  incomplete: { label: "Incomplete", color: "gold", hint: "The first payment hasn't gone through." },
-  incomplete_expired: { label: "Never paid", hint: "The first payment never went through." },
-  unpaid: { label: "Unpaid", color: "red", hint: "Stripe stopped retrying; they no longer have Pro." },
-  paused: { label: "Paused" },
-};
+import { paths } from "../../paths";
+import { isPro, SEAT_STATUS as STATUS } from "./seats";
 
 const STATUS_FILTER = Object.entries(STATUS).map(([value, status]) => ({ value, label: status?.label ?? value }));
 
@@ -75,7 +62,7 @@ const AccountCell = ({ userId }: { userId: number }) => {
 
   return (
     <div>
-      <Link to={`/viewProfessionals/${userId}`} className={styles.accountName}>
+      <Link to={paths.professional(userId)} className={styles.accountName}>
         {account?.name || account?.email || `Account #${userId}`}
       </Link>
       <div className={styles.subText}>
@@ -244,7 +231,7 @@ const AccessSubscriptions = () => {
   return (
     <div>
       <PageHeader
-        title="Access Subscriptions"
+        title="Subscriptions"
         subtitle="Access Pro seats, one per person: paid through Stripe or complimentary (given by an admin). Deleting a card keeps its seat."
         extra={
           <>

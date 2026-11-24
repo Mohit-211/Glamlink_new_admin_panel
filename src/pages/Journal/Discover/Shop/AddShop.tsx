@@ -30,6 +30,7 @@ import { apiErrorMessage } from "../../../../utils/apiError";
 import { showFieldError } from "../../../../utils/formErrors";
 import ProductSiteFields, { appendProductSiteFields } from "./ProductSiteFields";
 import type { JournalTopic } from "../../../../types/journal";
+import { paths } from "../../../../paths";
 
 const AddShop = () => {
   const [form] = Form.useForm();
@@ -110,7 +111,7 @@ const AddShop = () => {
         result?.data?.id;
 
       if (!shopId) {
-        throw new Error("Shop ID was not returned");
+        throw new Error("Product ID was not returned");
       }
 
       // ==========================
@@ -150,10 +151,10 @@ const AddShop = () => {
       message.success(
         status === "draft"
           ? "Draft saved successfully"
-          : "Shop published successfully",
+          : "Product published successfully",
       );
 
-      navigate("/shop");
+      navigate(paths.products);
     } catch (error) {
       console.error(error);
 
@@ -161,7 +162,7 @@ const AddShop = () => {
       message.error(
         showFieldError(form, error) ||
           apiErrorMessage(error) ||
-          "Failed to create Shop",
+          "Failed to create product",
       );
     }
   };
@@ -177,20 +178,20 @@ const AddShop = () => {
           marginBottom: "20px"
         }}>
         <div>
-          <h3>SHOP</h3>
-          <p>Manage shop articles</p>
+          <h3>Products</h3>
+          <p>Add a product to the shop</p>
         </div>
 
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/shop")}
+          onClick={() => navigate(paths.products)}
         >
-          Return to Shop Articles
+          Return to Products
         </Button>
       </div>
 
       {/* CARD */}
-      <Card title="Add Shop">
+      <Card title="Add Product">
         <Form form={form} layout="vertical">
           <Form.Item
             name="title"
@@ -285,9 +286,9 @@ const AddShop = () => {
             style={{ marginBottom: 24 }}
           >
             <Form.Item
-              label="Shop Topics"
+              label="Topics"
               style={{ marginBottom: 0 }}
-              extra="Select one or more reusable topics for this shop"
+              extra="Select one or more reusable topics for this product"
             >
               <Select
                 mode="multiple"
@@ -360,11 +361,11 @@ const AddShop = () => {
               type="primary"
               onClick={() => handleSubmit("published")}
             >
-              Publish Shop
+              Publish Product
             </Button>
 
             <Button
-              onClick={() => navigate("/shop")}
+              onClick={() => navigate(paths.products)}
             >
               Cancel
             </Button>

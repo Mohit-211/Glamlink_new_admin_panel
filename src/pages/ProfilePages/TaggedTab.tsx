@@ -7,6 +7,7 @@ import type { Paged } from "../../types/api";
 import type { TaggedArticle, TaggedVideo } from "../../types/profile";
 import { plural, shortDate } from "./pageContent";
 import styles from "./ProfilePages.module.scss";
+import { paths } from "../../paths";
 
 /** The Beauty Vault, the podcast's series on Watch. */
 export const PODCAST_SERIES = "beauty-vault-podcast";
@@ -82,7 +83,7 @@ const articleColumns: TableColumnsType<TaggedArticle> = [
     key: "title",
     render: (_, article) => (
       <div>
-        <Link to={`/edit-journal/${article.id}`} className={styles.pageName}>
+        <Link to={paths.article(article.id)} className={styles.pageName}>
           {article.title}
         </Link>
         {article.journal_author?.name && <div className={styles.sub}>By {article.journal_author.name}</div>}
@@ -109,7 +110,7 @@ const videoColumns: TableColumnsType<TaggedVideo> = [
     key: "title",
     render: (_, video) => (
       <div>
-        <Link to={`/watch/videos/${video.id}`} className={styles.pageName}>
+        <Link to={paths.video(video.id)} className={styles.pageName}>
           {video.title}
         </Link>
         {video.is_featured && (

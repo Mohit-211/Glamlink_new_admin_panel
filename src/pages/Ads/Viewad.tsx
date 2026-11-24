@@ -10,6 +10,7 @@ import styles from "./ViewAd.module.scss";
 import { useIdParam } from "../../utils/routing";
 import type { Ad } from "../../types/ads";
 import AdPerformance from "./AdPerformance";
+import { paths } from "../../paths";
 
 const behaviourLabel: Record<string, string> = {
   static: "Static — scrolls normally with the page",
@@ -56,7 +57,7 @@ const ViewAd = () => {
           <div>
             <h3 className={styles.headerTitle}>Ad not found</h3>
           </div>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/ads")}>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(paths.ads)}>
             Return to Ads
           </Button>
         </div>
@@ -74,13 +75,13 @@ const ViewAd = () => {
         </div>
 
         <div className={styles.headerActions}>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/ads")}>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(paths.ads)}>
             Return to Ads
           </Button>
           <Button
             type="primary"
             icon={<EditOutlined />}
-            onClick={() => navigate(`/edit-ad/${ad.id}`)}
+            onClick={() => navigate(paths.editAd(ad.id))}
           >
             Edit Ad
           </Button>

@@ -46,10 +46,10 @@ const renderEdit = (card: BusinessCard) => {
   );
   vi.mocked(axios.put).mockResolvedValue({ data: { data: card } });
   render(
-    <MemoryRouter initialEntries={[`/editBusinessCard/${card.id}`]}>
+    <MemoryRouter initialEntries={[`/access/cards/${card.id}`]}>
       <Routes>
-        <Route path="/editBusinessCard/:id" element={<EditBusinessCard />} />
-        <Route path="/digital-card" element={<p>Card list</p>} />
+        <Route path="/access/cards/:id" element={<EditBusinessCard />} />
+        <Route path="/access/cards" element={<p>Card list</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -74,7 +74,7 @@ const choose = async (combobox: HTMLElement, label: string) => {
 };
 
 // A pattern: after a refused save the button's loading icon stays in jsdom (its leave animation never ends).
-const save = () => fireEvent.click(screen.getByRole("button", { name: /Update Business Card/ }));
+const save = () => fireEvent.click(screen.getByRole("button", { name: /Update Access Card/ }));
 
 describe("Edit card: professional or brand", () => {
   it("loads a brand's card as a brand and saves it with no tagline and no location", async () => {

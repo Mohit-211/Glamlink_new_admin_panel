@@ -9,6 +9,7 @@ import { PlusOutlined } from "@ant-design/icons";
 import { apiErrorStatus } from "../../utils/apiError";
 import { singleSorter, type TableChangeHandler, type TableParams } from "../../utils/table";
 import type { Admin } from "../../types/admin";
+import { paths } from "../../paths";
 
 const AdminUser = () => {
 	const navigate = useNavigate();
@@ -31,7 +32,7 @@ const AdminUser = () => {
 		} catch (e) {
 			console.error(e);
 			if (apiErrorStatus(e) === 403) {
-				navigate("/error401");
+				navigate(paths.forbidden);
 				message.error("You do not have access to this page.");
 			} else {
 				message.error("Error loading data. Please try again later.");
@@ -56,7 +57,7 @@ const AdminUser = () => {
 	};
 
 	const navigateToAddAdmin = () => {
-		navigate("/addAdmin");
+		navigate(paths.newAdmin);
 	};
 
 	const removeUser = (user_id: number) => {
@@ -113,7 +114,7 @@ const AdminUser = () => {
 				}}
 			>
 				<div>
-					<h3 className="page-title">Admin List</h3>
+					<h3 className="page-title">Admins</h3>
 					<p className="page-sub-title">View, Edit, Delete, and Create Admin</p>
 				</div>
 				<Button

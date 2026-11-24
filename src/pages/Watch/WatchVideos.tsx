@@ -18,6 +18,7 @@ import {
 } from "./youtube";
 import styles from "./Watch.module.scss";
 import type { VideoRow, VideoSeries, VideoSource, VideoStatus } from "../../types/video";
+import { paths } from "../../paths";
 
 const PAGE_SIZE = 50;
 
@@ -180,7 +181,7 @@ const WatchVideos = () => {
               type="text"
               icon={<EditOutlined />}
               aria-label={`Edit ${row.title}`}
-              onClick={() => navigate(`/watch/videos/${row.id}`)}
+              onClick={() => navigate(paths.video(row.id))}
             />
           </Tooltip>
           <Tooltip title={row.status === "published" ? "View on site" : "Drafts aren't on the site"}>

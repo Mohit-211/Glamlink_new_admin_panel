@@ -71,9 +71,9 @@ const answer = (application: DirectoryApplication) =>
 
 const renderView = () =>
   render(
-    <MemoryRouter initialEntries={["/directory-applications/5"]}>
+    <MemoryRouter initialEntries={["/directory/applications/5"]}>
       <Routes>
-        <Route path="/directory-applications/:id" element={<ViewDirectoryApplication />} />
+        <Route path="/directory/applications/:id" element={<ViewDirectoryApplication />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -122,7 +122,7 @@ describe("Directory application: view and review", () => {
 
     await waitFor(() => expect(axios.put).toHaveBeenCalledWith(`${URL_5}/status`, { status: "approved" }));
     expect(await screen.findByText("Approved. bo@example.com was emailed how to sign in.")).toBeInTheDocument();
-    expect(await screen.findByRole("link", { name: "Account #77" })).toHaveAttribute("href", "/viewProfessionals/77");
+    expect(await screen.findByRole("link", { name: "Account #77" })).toHaveAttribute("href", "/professionals/77");
     expect(await pageButton("Move back to pending")).toBeInTheDocument();
   });
 

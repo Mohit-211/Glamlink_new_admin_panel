@@ -57,6 +57,7 @@ import type {
   GalleryImage,
 } from "../../types/businessCard";
 import type { City, State } from "../../types/location";
+import { paths } from "../../paths";
 
 type RcFile = NonNullable<UploadFile["originFileObj"]>;
 
@@ -503,7 +504,7 @@ const EditBusinessCard = () => {
         setVideos(vids);
       }
     } catch (error) {
-      message.error("Failed to load business card data");
+      message.error("Failed to load the card");
     }
   };
 
@@ -720,11 +721,11 @@ const EditBusinessCard = () => {
       }
 
       await UpdateBusinessCard(id, formData);
-      message.success("Business Card Updated Successfully");
-      navigate("/digital-card");
+      message.success("Access card updated");
+      navigate(paths.cards);
     } catch (error) {
       console.error(error);
-      message.error(showCardError(form, error) ?? "Failed to update business card");
+      message.error(showCardError(form, error) ?? "Failed to update the card");
     } finally {
       setLoading(false);
     }
@@ -802,13 +803,13 @@ const EditBusinessCard = () => {
             className="page-sub-title"
             style={{ margin: "4px 0 0 0", color: "var(--color-text-secondary)" }}
           >
-            Modify and configure professional details for this digital business
+            Change this Access card's details.
           </p>
         </div>
 
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/digital-card")}
+          onClick={() => navigate(paths.cards)}
         >
           Back
         </Button>
@@ -2065,7 +2066,7 @@ const EditBusinessCard = () => {
             fontSize: "15px",
           }}
         >
-          Update Business Card
+          Update Access Card
         </Button>
       </Form>
     </div>

@@ -10,6 +10,7 @@ import { apiErrorMessage } from "../../utils/apiError";
 import { showFieldError } from "../../utils/formErrors";
 import { websiteUrl } from "../../utils/website";
 import type { HomeSettings as Settings } from "../../types/content";
+import { paths } from "../../paths";
 
 const MAX_SEARCHES = 10;
 const MAX_SEARCH_LENGTH = 60;
@@ -115,7 +116,7 @@ const HomeSettings = () => {
             <h4 style={{ marginTop: 0 }}>Popular searches</h4>
             <p style={{ color: "var(--color-text-secondary)", marginTop: 0 }}>
               The chips under the home page's search box, in this order (at most {MAX_SEARCHES}). With none, the website
-              shows its own five. <Link to="/search-terms">Search Terms</Link> shows what people actually search for.
+              shows its own five. <Link to={paths.searchTerms}>Search Terms</Link> shows what people actually search for.
             </p>
             <Form.List name="popular_searches">
               {(fields, { add, remove, move }, { errors }) => (
@@ -167,9 +168,9 @@ const HomeSettings = () => {
               showIcon
               title={
                 <>
-                  The "Explore Beauty + Wellness" tiles are journal topics marked "Show on the home page", with their
-                  order and tile image: set them on <Link to="/journal-topics">Topics</Link>. Products in the Shop row
-                  are set on <Link to="/shop">Shop</Link>.
+                  The "Explore Beauty + Wellness" tiles are topics marked "Show on the home page", with their
+                  order and tile image: set them on <Link to={paths.topics}>Topics</Link>. Products in the Shop row
+                  are set on <Link to={paths.products}>Products</Link> (under Shop).
                 </>
               }
             />

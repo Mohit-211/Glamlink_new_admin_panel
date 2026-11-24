@@ -63,7 +63,7 @@ describe("Access subscriptions: complimentary Pro", () => {
     vi.mocked(axios.put).mockResolvedValue({ data: { data: seat({ status: "canceled" }) } });
     renderPage();
 
-    expect(await screen.findByRole("link", { name: "Kate Sibley" })).toHaveAttribute("href", "/viewProfessionals/12");
+    expect(await screen.findByRole("link", { name: "Kate Sibley" })).toHaveAttribute("href", "/professionals/12");
     expect(screen.getByText("Complimentary")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Take back complimentary/ }));
     fireEvent.click(await screen.findByRole("button", { name: "Take back" }));

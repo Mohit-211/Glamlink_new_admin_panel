@@ -7,6 +7,7 @@ import { CreateSpecialities } from "../../services/Api/SpecialitiesApi";
 
 import { ArrowLeftOutlined, CheckOutlined, CloseOutlined } from "@ant-design/icons";
 import { apiErrorStatus } from "../../utils/apiError";
+import { paths } from "../../paths";
 
 const AddSpecialities = () => {
 	const [form] = Form.useForm();
@@ -24,7 +25,7 @@ const AddSpecialities = () => {
 			if (response.status === 201) {
 				message.success("Speciality added successfully");
 				setTimeout(() => {
-					navigate("/specialities");
+					navigate(paths.specialities);
 				}, 1000);
 			}
 		} catch (error) {
@@ -41,7 +42,7 @@ const AddSpecialities = () => {
 	};
 
 	const navigateToUser = () => {
-		navigate("/specialities");
+		navigate(paths.specialities);
 	};
 
 	return (
@@ -54,7 +55,7 @@ const AddSpecialities = () => {
 				    marginBottom: "20px"
 				}}>
 				<div>
-					<h3 className="page-title">Speciality</h3>
+					<h3 className="page-title">Add Speciality</h3>
 					<p className="page-sub-title">Create New Speciality</p>
 				</div>
 				<div>

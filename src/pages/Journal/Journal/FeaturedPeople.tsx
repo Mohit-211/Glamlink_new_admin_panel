@@ -14,6 +14,7 @@ import { apiErrorMessage } from "../../../utils/apiError";
 import { websiteUrl } from "../../../utils/website";
 import type { ApiResponse } from "../../../types/api";
 import type { ArticleMention, ArticleMentions } from "../../../types/journal";
+import { paths } from "../../../paths";
 
 /** After a save: names the @handles in the text that match no page or card, which are likely typos. */
 export const warnUnmatchedMentions = (handles: string[] | undefined) => {
@@ -78,7 +79,7 @@ const FeaturedPeople = ({ journalId }: { journalId: string | number }) => {
       render: (_, row) =>
         row.account ? (
           <Space size={6} wrap>
-            <Link to={`/pages/${row.account.id}`}>{row.account.name || `Account #${row.account.id}`}</Link>
+            <Link to={paths.profilePage(row.account.id)}>{row.account.name || `Account #${row.account.id}`}</Link>
             {row.account.type === "brand" && <Tag color="purple">Brand</Tag>}
             {row.account.visible && row.account.slug ? (
               <a href={websiteUrl(`/profiles/${row.account.slug}`)} target="_blank" rel="noopener noreferrer">

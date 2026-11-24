@@ -26,6 +26,11 @@ export interface PageRow {
   visible: boolean;
   /** The account has a password, so its owner can sign in and edit the page. */
   claimed: boolean;
+  // Since Nov 24; an API from before leaves them out.
+  /** On the directory's map (a professional's pin; owners can't change it). */
+  is_on_map?: boolean;
+  /** The account's sign-in email; null: none yet (a brand page an admin made without one). */
+  email?: string | null;
 }
 
 export interface SocialLink {
@@ -59,6 +64,8 @@ export interface PageSettings {
   shipping?: ShippingKey | null;
   /** The picture beside About. Empty: the page's first photo, else the card gallery's cover photo. */
   about_image?: string | null;
+  /** Nov 24: the professional's pin on the directory's map (true unless an admin took it off). */
+  is_on_map?: boolean;
 }
 
 /** The page as the public sees it. */
@@ -103,6 +110,11 @@ export interface PublicPage {
 export interface PageView {
   user_id: number;
   slug: string | null;
+  // Since Nov 24; an API from before leaves them out.
+  /** The account's sign-in email; null: none yet. */
+  email?: string | null;
+  /** Someone has signed in (the account has a password). */
+  claimed?: boolean;
   page: PageSettings;
   visible: boolean;
   /** Why the public can't see it. */
@@ -131,6 +143,13 @@ export interface PageUpdate {
   category?: string | null;
   shipping?: ShippingKey | null;
   about_image?: string | null;
+  /** Nov 24: false takes a professional's pin off the directory's map. */
+  is_on_map?: boolean;
+  /**
+   * Nov 24: the sign-in email of a brand page an admin made, while nobody has signed in and it has no Access card;
+   * "" clears it. 409 ACCOUNT_EXISTS (another account has it), ALREADY_CLAIMED or EMAIL_NOT_EDITABLE otherwise.
+   */
+  email?: string;
 }
 
 export interface PageListParams {
@@ -138,9 +157,46 @@ export interface PageListParams {
   type?: PageType;
   /** Only featured pages, in their order. */
   featured?: boolean;
+  /** Nov 24: only the pages on (true) or off (false) the directory's map. */
+  on_map?: boolean;
   page?: number;
   /** At most 50. */
   limit?: number;
+}
+
+// ---- Brands in bulk from a CSV (Nov 24): POST /profiles/admin/brands/import ----
+
+/**
+ * One row's outcome: `created` (`ready` in a dry run) with the new page's `user_id` and `slug`; `skipped` when it is
+ * already here (`ACCOUNT_EXISTS`: its email has an account; `BRAND_EXISTS`: a brand of that name; `user_id` is it); or
+ * `failed`, to fix and upload again (`INVALID_PAGE` with `field`, `DUPLICATE_IN_FILE`, `INVALID_CSV`).
+ */
+export interface BrandImportRow {
+  /** As the spreadsheet numbers it: the header is row 1. */
+  row: number;
+  name: string | null;
+  email: string | null;
+  status: "created" | "ready" | "skipped" | "failed";
+  code: string | null;
+  field: string | null;
+  message: string | null;
+  user_id: number | null;
+  slug: string | null;
+  /** What the brand was (or would be) made without: "website: website must be a web link. (left out)". */
+  warnings: string[];
+}
+
+export interface BrandImportResult {
+  dry_run: boolean;
+  total: number;
+  created: number;
+  ready: number;
+  skipped: number;
+  failed: number;
+  with_warnings: number;
+  /** Columns the import doesn't read. */
+  ignored_columns: string[];
+  rows: BrandImportRow[];
 }
 
 /** A page's numbers for a date range (GET /profiles/admin/:userId/analytics), in card analytics' shape. */

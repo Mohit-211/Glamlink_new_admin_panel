@@ -56,6 +56,7 @@ import type {
   GalleryImage,
 } from "../../types/businessCard";
 import type { City, State } from "../../types/location";
+import { paths } from "../../paths";
 
 /* =========================================================
    Stable id generator — used to key featured-link images so
@@ -497,8 +498,8 @@ const CreateBusinessCard = () => {
       /* ================= API CALL ================= */
       await GenerateBusinessCard(formData);
 
-      message.success("Business Card Created Successfully");
-      navigate("/digital-card");
+      message.success("Access card created");
+      navigate(paths.cards);
     } catch (err) {
       console.error("SUBMIT ERROR:", err);
 
@@ -589,7 +590,7 @@ const CreateBusinessCard = () => {
         <div>
           <Button
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate("/digital-card")}
+            onClick={() => navigate(paths.cards)}
           >
             Back
           </Button>
@@ -1678,7 +1679,7 @@ const CreateBusinessCard = () => {
           fontWeight: "600",
         }}
       >
-        Create Business Card
+        Create Access Card
       </Button>
     </Form>
   );

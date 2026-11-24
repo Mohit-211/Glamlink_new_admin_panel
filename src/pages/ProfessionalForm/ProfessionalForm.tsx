@@ -16,6 +16,7 @@ import { SearchOutlined } from "@ant-design/icons";
 import { apiErrorStatus } from "../../utils/apiError";
 import { singleSorter, type TableChangeHandler, type TableParams, type WithIndex } from "../../utils/table";
 import type { FormAnswer, FormSubmission } from "../../types/content";
+import { paths } from "../../paths";
 
 const ProfessionalForm = () => {
 	const navigate = useNavigate();
@@ -48,7 +49,7 @@ const ProfessionalForm = () => {
 		} catch (e) {
 			console.error(e);
 			if (apiErrorStatus(e) === 403) {
-				navigate("/error401");
+				navigate(paths.forbidden);
 			}
 		} finally {
 			setLoading(false);
@@ -201,7 +202,7 @@ const ProfessionalForm = () => {
 				    marginBottom: "20px"
 				}}>
 				<div>
-					<h3 className="page-title">Professional Form</h3>
+					<h3 className="page-title">Applicant Forms</h3>
 					<p className="page-sub-title">Manage and approve form requests.</p>
 				</div>
 				<div

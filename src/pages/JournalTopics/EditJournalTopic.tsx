@@ -18,6 +18,7 @@ import styles from "./JournalTopics.module.scss";
 import TopicTileFields, { appendTileFields } from "./TopicTileFields";
 import { apiErrorMessage, isFormValidationError } from "../../utils/apiError";
 import { useIdParam } from "../../utils/routing";
+import { paths } from "../../paths";
 
 const EditJournalTopic = () => {
   const [form] = Form.useForm();
@@ -42,7 +43,7 @@ const EditJournalTopic = () => {
 
       if (!topic) {
         message.error("Topic not found");
-        navigate("/journal-topics");
+        navigate(paths.topics);
         return;
       }
 
@@ -62,7 +63,7 @@ const EditJournalTopic = () => {
         apiErrorMessage(error) || "Failed to load topic",
       );
 
-      navigate("/journal-topics");
+      navigate(paths.topics);
     } finally {
       setLoading(false);
     }
@@ -97,7 +98,7 @@ const EditJournalTopic = () => {
 
       message.success("Topic updated successfully");
 
-      navigate("/journal-topics");
+      navigate(paths.topics);
     } catch (error) {
       console.error(error);
 
@@ -145,7 +146,7 @@ const EditJournalTopic = () => {
 
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/journal-topics")}
+          onClick={() => navigate(paths.topics)}
         >
           Return to Topics
         </Button>
@@ -278,7 +279,7 @@ const EditJournalTopic = () => {
                 Save your changes when you're finished.
               </span>
 
-              <Button onClick={() => navigate("/journal-topics")}>
+              <Button onClick={() => navigate(paths.topics)}>
                 Cancel
               </Button>
 

@@ -22,6 +22,9 @@ const formatTime = (value: string) =>
     hour12: false,
   });
 
+// The backend's role ids for the accounts that sign in.
+const ROLE_LABEL: Partial<Record<number, string>> = { 6: "App user", 7: "Professional", 8: "Brand" };
+
 const userColumns: TableColumnsType<UserRow> = [
   {
     title: "Name",
@@ -39,8 +42,7 @@ const userColumns: TableColumnsType<UserRow> = [
     title: "Role",
     key: "role",
     align: "right",
-    render: (_, { records }) =>
-      records[0].role_id === 6 ? "User" : records[0].role_id === 7 ? "Driver" : "",
+    render: (_, { records }) => ROLE_LABEL[records[0].role_id] ?? "",
   },
   {
     title: "User Id",
@@ -136,7 +138,7 @@ const LoginLogs = () => {
             justifyContent: "space-between",
             flexDirection: "column"
           }}>
-          <h3 className="dashboard_title"> User Login Activity:</h3>
+          <h3 className="dashboard_title">Login Activity</h3>
           <p className="page-sub-title" style={{ color: "var(--color-success)" }}>
             Login track record of all users
           </p>

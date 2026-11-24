@@ -88,6 +88,7 @@ import type {
   Shop,
 } from "../../../types/journal";
 import type { BusinessCard } from "../../../types/businessCard";
+import { paths } from "../../../paths";
 
 const SectionCard = ({
   icon,
@@ -616,7 +617,7 @@ const EditBlog = () => {
         initialParagraphTopicIdsRef.current,
       );
 
-      // Keep failed topics in the "previous" set so the next Update journal
+      // Keep failed topics in the "previous" set so the next Update article
       // click retries reconciling them instead of silently forgetting —
       // otherwise a topic whose removal failed to sync would never get
       // cleared server-side again, since it's no longer in the content at
@@ -641,22 +642,22 @@ const EditBlog = () => {
           .map((t) => t.name);
 
         message.warning(
-          `Journal saved, but the paragraph tag for "${
+          `Article saved, but the paragraph tag for "${
             failedNames.join(", ") || failedTopicIds.join(", ")
-          }" couldn't sync. Click "Update journal" again to retry — don't leave this page yet.`,
+          }" couldn't sync. Click "Update article" again to retry — don't leave this page yet.`,
           6,
         );
         // Stay on this page rather than navigating away — leaving now would
         // drop the in-memory retry state and the mismatch could go
         // unnoticed until someone checks the topic's paragraph list later.
       } else {
-        message.success("Journal updated successfully");
-        navigate("/journals");
+        message.success("Article updated successfully");
+        navigate(paths.articles);
       }
     } catch (err) {
       console.error(err);
       // A taken slug is refused with details.field "slug": show it on the field.
-      message.error(showFieldError(form, err) || apiErrorMessage(err) || "Failed to update journal");
+      message.error(showFieldError(form, err) || apiErrorMessage(err) || "Failed to update article");
     } finally {
       setSubmitting(false);
     }
@@ -691,21 +692,21 @@ const EditBlog = () => {
       <div className={styles.headerCard}>
         <div>
           <h3 className={styles.headerTitle}>
-            Edit Journal{" "}
+            Edit Article{" "}
             <Tag color={statusColors[currentStatus] || "default"}>
               {currentStatus}
             </Tag>
           </h3>
           <p className={styles.headerSubtitle}>
-            Update the details, content and downloads for this journal.
+            Update the details, content and downloads for this article.
           </p>
         </div>
 
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/journals")}
+          onClick={() => navigate(paths.articles)}
         >
-          Return to Journals
+          Return to Articles
         </Button>
       </div>
 
@@ -713,7 +714,7 @@ const EditBlog = () => {
         {/* BASIC DETAILS */}
         <SectionCard
           icon={<FormOutlined />}
-          title="Journal details"
+          title="Article details"
           hint="Title, author, category, status and schedule"
         >
           <Row gutter={20}>
@@ -724,7 +725,7 @@ const EditBlog = () => {
                 rules={[{ required: true, message: "Title is required" }]}
               >
                 <Input
-                  placeholder="Enter journal title"
+                  placeholder="Enter article title"
                   onChange={(e) => {
                     const title = e.target.value;
 
@@ -795,12 +796,12 @@ const EditBlog = () => {
             <Col xs={24} md={12}>
               <Form.Item
                 name="shop_ids"
-                label="Shops"
-                tooltip="Optional — select one or more shops for this journal"
+                label="Products"
+                tooltip="Optional — select one or more products for this article"
               >
                 <Select
                   mode="multiple"
-                  placeholder="Select shops"
+                  placeholder="Select products"
                   showSearch
                   optionFilterProp="children"
                   allowClear
@@ -861,7 +862,7 @@ const EditBlog = () => {
         <SectionCard
           icon={<FileTextOutlined />}
           title="Content"
-          hint="Full journal body, images and video — type @ to tag a business"
+          hint="Full article body, images and video — type @ to tag a business"
         >
           <div
             style={{
@@ -893,9 +894,9 @@ const EditBlog = () => {
                 <strong>Topic</strong> in the toolbar, pick the
                 topics, then click <strong>Save</strong>. The paragraph gets a
                 purple label showing its topic(s) — this is saved with the
-                content, so it's still there next time you open this journal,
+                content, so it's still there next time you open this article,
                 and you can click back in to change it. Click{" "}
-                <strong>"Update journal"</strong> below to save your changes.
+                <strong>"Update article"</strong> below to save your changes.
               </div>
             </div>
           </div>
@@ -913,7 +914,7 @@ const EditBlog = () => {
         <SectionCard
           icon={<SearchOutlined />}
           title="SEO"
-          hint="Control how this journal appears in search results and shared links"
+          hint="Control how this article appears in search results and shared links"
         >
           <div
             style={{
@@ -938,7 +939,7 @@ const EditBlog = () => {
               <div style={{ marginTop: 4 }}>
                 Leave the SEO Title or Meta Description blank and Google will
                 fall back to the main Title / Short description automatically.
-                The <strong>URL Slug</strong> already reflects this journal's
+                The <strong>URL Slug</strong> already reflects this article's
                 live web address, so editing the Title above won't change it
                 automatically — that protects any links that are already shared
                 or indexed. Use "Reset to title" only if you're sure you want to
@@ -952,7 +953,7 @@ const EditBlog = () => {
               <Form.Item
                 name="seo_title"
                 label="SEO Title / Title Tag"
-                tooltip="Shown as the clickable headline in Google search results and in the browser tab. Defaults to the journal Title if left blank. Aim for under ~60 characters so it isn't cut off."
+                tooltip="Shown as the clickable headline in Google search results and in the browser tab. Defaults to the article's title if left blank. Aim for under ~60 characters so it isn't cut off."
               >
                 <Input
                   maxLength={255}
@@ -990,7 +991,7 @@ const EditBlog = () => {
                     </Tag>
                   </span>
                 }
-                tooltip="The web-address-friendly version of this journal's title, e.g. glamlink.net/journals/your-slug-here. Changing it here changes the live URL, so update it carefully if this journal is already published and shared."
+                tooltip="The web-address-friendly version of this article's title, e.g. glamlink.net/journals/your-slug-here. Changing it here changes the live URL, so update it carefully if this article is already published and shared."
                 style={{ marginBottom: 6 }}
               >
                 <div style={{ display: "flex", gap: 8 }}>
@@ -1047,7 +1048,7 @@ const EditBlog = () => {
         <SectionCard
           icon={<PaperClipOutlined />}
           title="Downloads"
-          hint="Drag the handle to reorder — files readers can download from this journal"
+          hint="Drag the handle to reorder — files readers can download from this article"
         >
           <Button
             type="dashed"
@@ -1217,9 +1218,9 @@ const EditBlog = () => {
         <SectionCard
           icon={<TagsOutlined />}
           title="Topics"
-          hint="Select one or more reusable topics for this journal"
+          hint="Select one or more reusable topics for this article"
         >
-          <Form.Item label="Journal Topics" style={{ marginBottom: 0 }}>
+          <Form.Item label="Topics" style={{ marginBottom: 0 }}>
             <Select
               mode="multiple"
               value={selectedTopicIds}
@@ -1240,7 +1241,7 @@ const EditBlog = () => {
         <SectionCard
           icon={<InfoCircleOutlined />}
           title="Frequently Asked Questions"
-          hint="Select the FAQs that should be displayed with this journal"
+          hint="Select the FAQs that should be displayed with this article"
         >
           {faqs.length === 0 ? (
             <Empty
@@ -1293,13 +1294,13 @@ const EditBlog = () => {
         <div className={styles.sectionCard}>
           <div className={styles.footerBar}>
             <span className={styles.footerHint}>
-              Changes are saved when you update the journal.
+              Changes are saved when you update the article.
             </span>
 
-            <Button onClick={() => navigate("/journals")}>Cancel</Button>
+            <Button onClick={() => navigate(paths.articles)}>Cancel</Button>
 
             <Button type="primary" onClick={handleSubmit} loading={submitting}>
-              Update journal
+              Update article
             </Button>
           </div>
         </div>

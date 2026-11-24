@@ -4,7 +4,9 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  server: { port: 3000, open: true },
+  // Always 3000: the API answers browsers only on the origins it lists (ACCESSDOMAINS), and http://localhost:3000 is the
+  // one listed for local testing. strictPort stops with an error instead of moving to 3001, which the API refuses.
+  server: { port: 3000, strictPort: true, open: true },
   preview: { port: 3000 },
   build: {
     // Same output folder CRA used, so deploy scripts don't change.

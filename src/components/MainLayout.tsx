@@ -2,47 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  AppstoreOutlined,
-  AuditOutlined,
-  CrownOutlined,
-  AudioOutlined,
-  BookOutlined,
-  CalendarOutlined,
-  DashboardOutlined,
-  DollarOutlined,
-  FolderOpenOutlined,
-  FormOutlined,
-  GlobalOutlined,
-  HistoryOutlined,
-  HomeOutlined,
-  IdcardOutlined,
-  InboxOutlined,
-  LineChartOutlined,
   LockOutlined,
   LogoutOutlined,
-  MailOutlined,
-  NotificationOutlined,
-  PlaySquareOutlined,
-  ProfileOutlined,
-  QuestionCircleOutlined,
-  ReadOutlined,
-  SafetyCertificateOutlined,
-  SearchOutlined,
-  SnippetsOutlined,
-  ShoppingOutlined,
-  SolutionOutlined,
-  StarOutlined,
-  TagOutlined,
-  TagsOutlined,
-  TeamOutlined,
-  TruckOutlined,
-  UnorderedListOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
   UserOutlined,
-  UserSwitchOutlined,
-  UsergroupAddOutlined,
-  VideoCameraOutlined,
 } from "@ant-design/icons";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { Layout, theme, Menu, Dropdown, Flex, type MenuProps } from "antd";
@@ -61,123 +25,41 @@ import "./MainLayout.scss";
 import { clearSession, useSessionToken } from "../utils/session";
 import { onRecountBadges } from "../utils/badges";
 import type { Admin } from "../types/admin";
+import { paths } from "../paths";
+import { isGroup, screenFor, SIDEBAR, type PendingCounts, type SidebarEntry } from "./sidebarMenu";
 const { Header, Sider, Content } = Layout;
 
 type MenuItem = Required<MenuProps>["items"][number];
 
-/** Work waiting for review, shown as badges. */
-interface PendingCounts {
-  applicants: number;
-  applications: number;
-  /** Google listing claims to verify. */
-  claims: number;
-}
-
+// A fragment, not a span: antd wraps a label in its title class (the sidebar's font size) unless it is a span already.
 const withBadge = (label: string, count: number) => (
-  <span>
+  <>
     {label}{" "}
     {count > 0 && <Badge count={count} size="small" style={{ marginLeft: "10px" }} />}
-  </span>
+  </>
 );
 
+const waitingAt = (entry: SidebarEntry, counts: PendingCounts) => (entry.badge ? counts[entry.badge] : 0);
+
 /**
- * The sidebar. Items are keyed by their route; groups by a name that is never a route, so a key is never used twice.
- * The panel looks after the website: the mobile app's screens (posts, clips, bookings, shop orders, rewards) are
- * gone until the app is rebuilt.
+ * The sidebar's menu (its screens and groups are in sidebarMenu.tsx). Screens are keyed by their address. A closed
+ * group shows the work waiting inside it, so a badge is never out of sight.
  */
-const menuItems = (counts: PendingCounts): MenuItem[] => [
-  { key: "/", icon: <DashboardOutlined />, label: "Dashboard" },
-  { key: "/professionals", icon: <SolutionOutlined />, label: "Professionals" },
-  { key: "/pages", icon: <ProfileOutlined />, label: "Profile Pages" },
-  { key: "/form", icon: <FormOutlined />, label: withBadge("Applicant Form", counts.applicants) },
-  {
-    key: "/directory-applications",
-    icon: <AuditOutlined />,
-    label: withBadge("Directory Applications", counts.applications),
-  },
-  {
-    key: "/directory-claims",
-    icon: <SafetyCertificateOutlined />,
-    label: withBadge("Listing Claims", counts.claims),
-  },
-  {
-    key: "group:inquiries",
-    icon: <InboxOutlined />,
-    label: "Inquiries",
-    children: [
-      { key: "/partner-inquiries", icon: <UsergroupAddOutlined />, label: "Partner With Us" },
-      { key: "/feature-requests", icon: <StarOutlined />, label: "Feature Requests" },
-      { key: "/newsletter", icon: <MailOutlined />, label: "Newsletter" },
-    ],
-  },
-  {
-    key: "group:access",
-    icon: <IdcardOutlined />,
-    label: "Access Cards",
-    children: [
-      { key: "/digital-card", icon: <IdcardOutlined />, label: "Card Requests" },
-      { key: "/access-orders", icon: <TruckOutlined />, label: "Access Orders" },
-      { key: "/access-subscriptions", icon: <CrownOutlined />, label: "Subscriptions" },
-      { key: "/access-pricing", icon: <DollarOutlined />, label: "Pricing" },
-      { key: "/access-analytics", icon: <LineChartOutlined />, label: "Analytics" },
-    ],
-  },
-  { key: "/directory", icon: <FolderOpenOutlined />, label: "Directory Sections" },
-  {
-    key: "group:journal",
-    icon: <ReadOutlined />,
-    label: "Journals",
-    children: [
-      { key: "/authors", icon: <TeamOutlined />, label: "Authors" },
-      { key: "/journal-categories", icon: <AppstoreOutlined />, label: "Categories" },
-      { key: "/journals", icon: <ReadOutlined />, label: "Journals" },
-      { key: "/education", icon: <BookOutlined />, label: "Education" },
-      { key: "/events", icon: <CalendarOutlined />, label: "Events" },
-      { key: "/shop", icon: <ShoppingOutlined />, label: "Shop" },
-      { key: "/shop/tags", icon: <TagOutlined />, label: "Product Tags" },
-      { key: "/journal-topics", icon: <TagsOutlined />, label: "Topics" },
-      { key: "/journal-faqs", icon: <QuestionCircleOutlined />, label: "FAQs" },
-    ],
-  },
-  {
-    key: "group:media",
-    icon: <PlaySquareOutlined />,
-    label: "Media",
-    children: [
-      { key: "/magazine", icon: <SnippetsOutlined />, label: "Magazine" },
-      { key: "/watch/videos", icon: <VideoCameraOutlined />, label: "Videos" },
-      { key: "/watch/series", icon: <UnorderedListOutlined />, label: "Video Series" },
-      { key: "/podcast-schedule", icon: <AudioOutlined />, label: "Podcast Schedule" },
-    ],
-  },
-  { key: "/ads", icon: <NotificationOutlined />, label: "Ads" },
-  {
-    key: "group:website",
-    icon: <GlobalOutlined />,
-    label: "Website",
-    children: [
-      { key: "/home-page", icon: <HomeOutlined />, label: "Home Page" },
-      { key: "/search-terms", icon: <SearchOutlined />, label: "Search Terms" },
-    ],
-  },
-  { key: "/specialities", icon: <TagOutlined />, label: "Specialities" },
-  { key: "/adminList", icon: <UserSwitchOutlined />, label: "Access Management" },
-];
-
-/** Every route in the menu, with the group it sits in (if any). */
-const routesIn = (items: MenuItem[], group?: string): { key: string; group?: string }[] =>
-  items.flatMap((item) => {
-    if (!item || !("key" in item) || item.key === undefined) return [];
-    const key = String(item.key);
-    if ("children" in item && item.children) return routesIn(item.children, key);
-    return [{ key, group }];
+const menuItems = (counts: PendingCounts, openKeys: string[]): MenuItem[] =>
+  SIDEBAR.map((item) => {
+    if (!isGroup(item)) return { key: item.path, icon: item.icon, label: withBadge(item.label, waitingAt(item, counts)) };
+    const waiting = openKeys.includes(item.key) ? 0 : item.entries.reduce((n, entry) => n + waitingAt(entry, counts), 0);
+    return {
+      key: item.key,
+      icon: item.icon,
+      label: withBadge(item.label, waiting),
+      children: item.entries.map((entry) => ({
+        key: entry.path,
+        icon: entry.icon,
+        label: withBadge(entry.label, waitingAt(entry, counts)),
+      })),
+    };
   });
-
-/** The menu item for a path: the route it is, or the longest route it sits under (/watch/videos/12 → /watch/videos). */
-const itemFor = (path: string, items: MenuItem[]) =>
-  routesIn(items)
-    .filter(({ key }) => key === path || (key !== "/" && path.startsWith(`${key}/`)))
-    .sort((a, b) => b.key.length - a.key.length)[0];
 
 const MainLayout = () => {
   // Re-renders when the session starts or ends (here or in another tab).
@@ -212,7 +94,8 @@ const MainLayout = () => {
     const count = (key: keyof PendingCounts, load: () => Promise<number>) =>
       load()
         .then((n) => {
-          if (current) setCounts((c) => ({ ...c, [key]: Number.isNaN(n) ? 0 : n }));
+          // A count the API didn't answer as a number shows no badge (a group adds its entries' counts).
+          if (current) setCounts((c) => ({ ...c, [key]: Number.isFinite(n) ? n : 0 }));
         })
         .catch((err) => console.error(`Failed to fetch the ${key} count:`, err));
     count("applicants", async () => Number.parseInt(String((await GetPendingFormCount()).data.data), 10));
@@ -229,20 +112,24 @@ const MainLayout = () => {
   } = theme.useToken();
   const navigate = useNavigate();
 
-  const items = menuItems(counts);
-  const current = itemFor(pathname, items);
-  // The current page's group opens; groups opened by hand stay open.
+  const current = screenFor(pathname);
+  // One group is open at a time: the current page's, until another is opened.
   const [openKeys, setOpenKeys] = useState<string[]>(() => (current?.group ? [current.group] : []));
   useEffect(() => {
-    if (current?.group) setOpenKeys((keys) => (keys.includes(current.group!) ? keys : [...keys, current.group!]));
+    if (current?.group) setOpenKeys([current.group]);
   }, [current?.group]);
+  const onOpenChange = (keys: string[]) => {
+    const opened = keys.find((key) => !openKeys.includes(key));
+    setOpenKeys(opened ? [opened] : keys);
+  };
+  const items = menuItems(counts, openKeys);
 
   async function logout() {
     // Sign out on the server first (it ends every session of this admin), then here.
     await AdminLogout().catch(() => {});
     clearSession();
     message.success("Logged Out Successfully");
-    navigate("/login");
+    navigate(paths.login);
   }
 
   return (
@@ -266,9 +153,9 @@ const MainLayout = () => {
             <Menu
               theme="dark"
               mode="inline"
-              selectedKeys={current ? [current.key] : []}
+              selectedKeys={current ? [current.path] : []}
               openKeys={collapsed ? undefined : openKeys}
-              onOpenChange={setOpenKeys}
+              onOpenChange={onOpenChange}
               onClick={({ key }) => navigate(key)}
               items={items}
             />
@@ -294,21 +181,17 @@ const MainLayout = () => {
                 <Dropdown
                   trigger={["click"]}
                   menu={{
+                    // The signed-in admin's own account. Other people's sign-ins are under Professionals.
                     items: [
                       {
-                        key: "/viewAdmin",
+                        key: paths.account,
                         icon: <UserOutlined />,
                         label: "View Profile",
                       },
                       {
-                        key: "/reset-password",
+                        key: paths.changePassword,
                         icon: <LockOutlined />,
                         label: "Change Password",
-                      },
-                      {
-                        key: "/loginLogs",
-                        icon: <HistoryOutlined />,
-                        label: "User Login Activity",
                       },
                       { type: "divider" },
                       {

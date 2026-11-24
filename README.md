@@ -41,7 +41,7 @@ Read at build time from `.env` (see `.env.example`). Only variables prefixed wit
 | `VITE_GOOGLE_MAPS_API_KEY` | Google Maps address search and geocoding on the access card forms; the script loads on first use (`src/utils/googleMaps.ts`) |
 | `VITE_WEBSITE_URL` | Optional. The public website, for "view on site" links (`src/utils/website.ts`); defaults to `https://glamlink.net` |
 
-The API only answers browsers on origins it lists (`ACCESSDOMAINS` on the server; production: `https://admin.glamlink.net`). To run the panel locally against it, ask for `http://localhost:3000` to be added.
+The API only answers browsers on origins it lists (`ACCESSDOMAINS` in the API's `.env` on the server). On Nov 22, 2026 the live API listed `https://admin.glamlink.net` and `http://localhost:3000`, so `npm run dev` with the production values above works against it; a port it doesn't list is refused (`http://localhost:3001` got 403 `ORIGIN_NOT_ALLOWED`), which is why the dev server never moves off port 3000 (`strictPort` in `vite.config.ts`). Check from a terminal: `curl -sI -H 'Origin: http://localhost:3000' https://api.glamlink.net/api/v1/access/plans | grep -i access-control-allow-origin`. Since Nov 5, api.glamlink.net is the live API: what you do from a local panel is real (customer data, Stripe, Shippo labels, emails). If the Maps key is restricted to admin.glamlink.net, as `.env.example` intends, address search on the card forms fails locally unless `http://localhost:3000/*` is added to its allowed referrers.
 
 Every request carries the admin token through one shared client (`src/utils/session.ts`); API functions don't set auth headers themselves.
 
@@ -66,8 +66,9 @@ The live panel is admin.glamlink.net. This repo holds no CI or hosting config; t
 ```
 index.html                Vite entry (loads src/index.tsx)
 src/
-  App.tsx                 Routes
-  components/             Shared components: layout, rich-text editor, image cropper, SafeHtml (stored HTML
+  App.tsx                 Routes, and redirects from old addresses
+  paths.ts                Every screen's address (routes, sidebar and links read it), and the old addresses that moved
+  components/             Shared components: layout and the sidebar's groups (sidebarMenu.tsx), rich-text editor, image cropper, SafeHtml (stored HTML
                           through DOMPurify), DeleteConfirmButton, and for the newer screens
                           PageHeader/Panel, AccountSelect (pick professional and brand accounts),
                           ImageUploadField (upload an image, keep its link), DateRangeFilter

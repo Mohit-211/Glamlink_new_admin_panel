@@ -29,10 +29,10 @@ const renderAdd = () => {
   );
   vi.mocked(axios.post).mockResolvedValue({ data: { data: { id: 41 } } });
   render(
-    <MemoryRouter initialEntries={["/add-shop"]}>
+    <MemoryRouter initialEntries={["/shop/products/new"]}>
       <Routes>
-        <Route path="/add-shop" element={<AddShop />} />
-        <Route path="/shop" element={<p>Product list</p>} />
+        <Route path="/shop/products/new" element={<AddShop />} />
+        <Route path="/shop/products" element={<p>Product list</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -72,7 +72,7 @@ describe("Add product: category, tag and button label", () => {
     // An admin can set an editorial tag.
     await choose(screen.getByLabelText("Tag"), "Featured in The Beauty Vault");
     type("Button label", "Pre-order");
-    fireEvent.click(screen.getByRole("button", { name: "Publish Shop" }));
+    fireEvent.click(screen.getByRole("button", { name: "Publish Product" }));
 
     await waitFor(() => expect(axios.post).toHaveBeenCalled());
     const [url, sent] = vi.mocked(axios.post).mock.calls[0] as [string, FormData];

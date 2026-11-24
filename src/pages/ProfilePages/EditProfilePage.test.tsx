@@ -71,9 +71,9 @@ const refusal = (status: number, code: string, message: string, details?: object
 
 const renderPage = (state?: object) =>
   render(
-    <MemoryRouter initialEntries={[{ pathname: "/pages/812", state }]}>
+    <MemoryRouter initialEntries={[{ pathname: "/professionals/pages/812", state }]}>
       <Routes>
-        <Route path="/pages/:userId" element={<EditProfilePage />} />
+        <Route path="/professionals/pages/:userId" element={<EditProfilePage />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -276,9 +276,9 @@ describe("Professional and brand pages: the screen's tabs", () => {
 
   const renderAt = (entry: string) =>
     render(
-      <MemoryRouter initialEntries={[{ pathname: "/pages/812", search: entry, state: { claimed: true, from: "/pages?type=brand" } }]}>
+      <MemoryRouter initialEntries={[{ pathname: "/professionals/pages/812", search: entry, state: { claimed: true, from: "/professionals/pages?type=brand" } }]}>
         <Routes>
-          <Route path="/pages/:userId" element={<EditProfilePage />} />
+          <Route path="/professionals/pages/:userId" element={<EditProfilePage />} />
         </Routes>
         <Address />
       </MemoryRouter>,
@@ -301,10 +301,10 @@ describe("Professional and brand pages: the screen's tabs", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "Media & Images" }));
     expect(await screen.findByText(/No media of its own yet/)).toBeInTheDocument();
-    expect(screen.getByTestId("address")).toHaveTextContent("/pages/812?tab=media");
+    expect(screen.getByTestId("address")).toHaveTextContent("/professionals/pages/812?tab=media");
     // "Back" still goes to the list the screen was opened from.
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
-    await waitFor(() => expect(screen.getByTestId("address")).toHaveTextContent("/pages?type=brand"));
+    await waitFor(() => expect(screen.getByTestId("address")).toHaveTextContent("/professionals/pages?type=brand"));
   });
 
   it("opens the Page tab for an address it doesn't know", async () => {
@@ -313,5 +313,87 @@ describe("Professional and brand pages: the screen's tabs", () => {
 
     expect(await screen.findByRole("textbox", { name: "Tagline" })).toBeInTheDocument();
     expect(within(screen.getByRole("tablist")).getByRole("tab", { name: "Page", selected: true })).toBeInTheDocument();
+  });
+});
+
+describe("Professional and brand pages: map pins and emails (Nov 24)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const professional = (page: Partial<PageSettings> = {}) =>
+    view(page, { email: "kate@example.com", claimed: true, public: { ...view().public, type: "individual" } });
+
+  it("takes a professional's pin off the directory map, and says so", async () => {
+    answerGets({ "profiles/admin/812": professional({ is_on_map: true }), profession: { count: 0, rows: [] } });
+    vi.mocked(axios.put).mockResolvedValue({ data: { data: professional({ is_on_map: false }) } });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("switch", { name: "Show on directory map" }));
+    save();
+
+    await waitFor(() => expect(axios.put).toHaveBeenCalled());
+    expect(vi.mocked(axios.put).mock.lastCall?.[1]).toMatchObject({ is_on_map: false });
+    expect(await screen.findByText(/Off the directory's map/)).toBeInTheDocument();
+  });
+
+  it("offers no map switch on a brand's page: the map shows professionals only", async () => {
+    answerGets({ "profiles/admin/812": view({ is_on_map: true }, { email: "hello@revance.com", claimed: true }) });
+    renderPage();
+
+    await screen.findByRole("textbox", { name: "Tagline" });
+    expect(screen.queryByRole("switch", { name: "Show on directory map" })).not.toBeInTheDocument();
+    expect(vi.mocked(axios.put)).not.toHaveBeenCalled();
+  });
+
+  // A brand page an admin made without an email, no card behind it, nobody signed in.
+  const madeByAdmin = (fields: Partial<PageView> = {}) =>
+    view(
+      { created_by_admin: true },
+      { email: null, claimed: false, public: { ...view().public, access_card: null }, ...fields },
+    );
+
+  it("sets the email of a brand page an admin made; the claim email waits for it", async () => {
+    answerGets({ "profiles/admin/812": madeByAdmin() });
+    vi.mocked(axios.put).mockResolvedValue({ data: { data: madeByAdmin({ email: "hello@glow.co" }) } });
+    renderPage();
+
+    const email = await screen.findByRole("textbox", { name: "Email" });
+    expect(screen.getByText("No email yet")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Send claim email/ })).toBeDisabled();
+
+    fireEvent.change(email, { target: { value: "hello@glow.co" } });
+    save();
+
+    await waitFor(() => expect(axios.put).toHaveBeenCalled());
+    expect(vi.mocked(axios.put).mock.lastCall?.[1]).toMatchObject({ email: "hello@glow.co" });
+    await waitFor(() => expect(screen.getByRole("button", { name: /Send claim email/ })).toBeEnabled());
+    expect(screen.queryByText("No email yet")).not.toBeInTheDocument();
+  });
+
+  it("puts the API's refusal of an email on its field, and saves nothing", async () => {
+    answerGets({ "profiles/admin/812": madeByAdmin() });
+    vi.mocked(axios.put).mockRejectedValue(
+      refusal(409, "ACCOUNT_EXISTS", "This email already has an account: edit its page instead.", { user_id: 77 }),
+    );
+    renderPage();
+
+    fireEvent.change(await screen.findByRole("textbox", { name: "Email" }), { target: { value: "taken@glow.co" } });
+    save();
+
+    expect(await screen.findByText("This email already has an account: it can't be this brand's.")).toBeInTheDocument();
+    expect(screen.getByText("Nothing was saved: the email can't be used")).toBeInTheDocument();
+  });
+
+  it("sends no email when it hasn't changed, and offers no email field once someone has signed in", async () => {
+    answerGets({ "profiles/admin/812": madeByAdmin({ email: "hello@glow.co", claimed: true }) });
+    vi.mocked(axios.put).mockResolvedValue({ data: { data: madeByAdmin({ email: "hello@glow.co", claimed: true }) } });
+    renderPage();
+
+    await screen.findByRole("textbox", { name: "Tagline" });
+    // The page's own answer says the account can sign in: no claim email, no email field, without the list's word.
+    expect(screen.queryByRole("textbox", { name: "Email" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Send claim email/ })).not.toBeInTheDocument();
+    save();
+    await waitFor(() => expect(axios.put).toHaveBeenCalled());
+    expect(vi.mocked(axios.put).mock.lastCall?.[1]).not.toHaveProperty("email");
   });
 });

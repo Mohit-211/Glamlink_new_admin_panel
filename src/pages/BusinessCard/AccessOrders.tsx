@@ -51,6 +51,7 @@ import type {
   ShippingOptionId,
 } from "../../types/businessCard";
 import type { ShippingRate } from "../../types/access";
+import { paths } from "../../paths";
 
 const VEGAS_TZ = "America/Los_Angeles";
 
@@ -720,7 +721,7 @@ const AccessOrders = () => {
   const [editTrackingLink, setEditTrackingLink] = useState("");
   const [buyingLabelFor, setBuyingLabelFor] = useState<AccessOrder | null>(null);
   const [cancellingOrder, setCancellingOrder] = useState<AccessOrder | null>(null);
-  // The admin's order email links to /access-orders/:id.
+  // One order's own address (paths.order). The admin's order email links to its old address, which redirects here.
   const { id: routeId } = useParams();
   const navigate = useNavigate();
 
@@ -786,7 +787,7 @@ const AccessOrders = () => {
   const closeOrderDetails = () => {
     setDetailModalOpen(false);
     // Off the order's own address, so a refresh doesn't open it again.
-    if (routeId) navigate("/access-orders", { replace: true });
+    if (routeId) navigate(paths.orders, { replace: true });
   };
 
   /**
@@ -1058,7 +1059,7 @@ const AccessOrders = () => {
     <div className="ao-page">
       <div className="ao-header">
         <div>
-          <h3 className="ao-title">Access Orders</h3>
+          <h3 className="ao-title">Orders</h3>
           <p className="ao-subtitle">
             Fulfill NFC keychain shipments · times shown in Las Vegas (Pacific)
           </p>

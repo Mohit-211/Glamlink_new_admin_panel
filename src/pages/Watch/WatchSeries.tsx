@@ -22,6 +22,7 @@ import { showFieldError } from "../../utils/formErrors";
 import { playlistUrl } from "./youtube";
 import styles from "./Watch.module.scss";
 import type { SeriesFields, VideoSeries } from "../../types/video";
+import { paths } from "../../paths";
 
 interface SeriesValues {
   name: string;
@@ -214,7 +215,7 @@ const WatchSeries = () => {
               type="text"
               icon={<PlaySquareOutlined />}
               aria-label={`Videos of ${row.name}`}
-              onClick={() => navigate(`/watch/videos?series=${row.id}`)}
+              onClick={() => navigate(`${paths.videos}?series=${row.id}`)}
             />
           </Tooltip>
         </Space>
@@ -225,7 +226,7 @@ const WatchSeries = () => {
   return (
     <div>
       <PageHeader
-        title="Video series"
+        title="Video Series"
         subtitle={
           <>
             The Watch page shows active series, lowest sort order first. "Import playlists" on Videos brings in each

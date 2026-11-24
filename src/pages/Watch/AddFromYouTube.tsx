@@ -6,6 +6,7 @@ import { showFieldError } from "../../utils/formErrors";
 import { seriesOptions, youtubeErrorMessage } from "./youtube";
 import styles from "./Watch.module.scss";
 import type { Video, VideoSeries } from "../../types/video";
+import { paths } from "../../paths";
 
 interface Values {
   url: string;
@@ -38,7 +39,7 @@ const AddFromYouTube = ({ open, series, onClose }: AddFromYouTubeProps) => {
       const { created, video } = res.data.data;
       if (created) {
         message.success(`"${video.title}" added. Set its people and topics here.`);
-        navigate(`/watch/videos/${video.id}`);
+        navigate(paths.video(video.id));
       } else {
         setExisting(video);
       }
@@ -81,7 +82,7 @@ const AddFromYouTube = ({ open, series, onClose }: AddFromYouTubeProps) => {
           title={`"${existing.title}" is already here`}
           description="Adding its link again changes nothing, its series included."
           action={
-            <Button size="small" type="primary" onClick={() => navigate(`/watch/videos/${existing.id}`)}>
+            <Button size="small" type="primary" onClick={() => navigate(paths.video(existing.id))}>
               Open it
             </Button>
           }

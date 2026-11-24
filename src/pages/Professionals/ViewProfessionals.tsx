@@ -14,6 +14,7 @@ import { websiteUrl } from "../../utils/website";
 import AccountFields from "./AccountFields";
 import type { UserDetail } from "../../types/user";
 import type { PageView } from "../../types/profile";
+import { paths } from "../../paths";
 
 const HIDDEN_BECAUSE: Record<string, string> = {
 	no_live_card: "Hidden: no live Access card or approved directory listing",
@@ -69,7 +70,7 @@ const ViewProfessionals = () => {
 					</p>
 				</div>
 				<Button
-					onClick={() => navigate("/professionals")}
+					onClick={() => navigate(paths.professionals)}
 					style={{
 					    borderRadius: "5px"
 					}}
@@ -239,10 +240,10 @@ const ViewProfessionals = () => {
 								</Descriptions>
 
 								<Space style={{ marginTop: 16 }} wrap>
-									<Button type="primary" onClick={() => navigate(`/pages/${id}`)}>
+									<Button type="primary" onClick={() => navigate(paths.profilePage(id))}>
 										Edit page
 									</Button>
-									<Button onClick={() => navigate(`/pages/${id}/analytics`)}>Page analytics</Button>
+									<Button onClick={() => navigate(paths.profilePageAnalytics(id))}>Page analytics</Button>
 								</Space>
 							</>
 						)}

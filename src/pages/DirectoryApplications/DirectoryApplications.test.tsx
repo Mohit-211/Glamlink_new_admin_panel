@@ -81,7 +81,7 @@ const listCalls = () => vi.mocked(axios.get).mock.calls.filter(([url]) => url ==
 
 const renderList = () =>
   render(
-    <MemoryRouter initialEntries={["/directory-applications"]}>
+    <MemoryRouter initialEntries={["/directory/applications"]}>
       <DirectoryApplications />
     </MemoryRouter>,
   );
@@ -107,7 +107,7 @@ describe("Directory applications list", () => {
     expect(await screen.findByText("Mia Brows")).toBeInTheDocument();
     expect(listCalls().at(-1)?.[1]).toEqual({ params: { status: "approved", page: 1, limit: 50 } });
     expect(await screen.findByText(/Melanie · Oct 24, 2026/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Account #41" })).toHaveAttribute("href", "/viewProfessionals/41");
+    expect(screen.getByRole("link", { name: "Account #41" })).toHaveAttribute("href", "/professionals/41");
 
     fireEvent.click(screen.getByText("All"));
     await waitFor(() => expect(listCalls().at(-1)?.[1]).toEqual({ params: { page: 1, limit: 50 } }));

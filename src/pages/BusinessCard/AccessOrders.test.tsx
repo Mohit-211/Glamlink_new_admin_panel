@@ -88,12 +88,13 @@ const ordersList = {
   pagination: { total: 2, page: 1, limit: 10, totalPages: 1 },
 };
 
-// The admin's order email links to /access-orders/:id, which opens that order.
+// One order's address opens that order. The order email links to its old address (/access-orders/:id), which
+// redirects here (App.test.tsx).
 const renderAt = (path: string) =>
   render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/access-orders/:id?" element={<AccessOrders />} />
+        <Route path="/access/orders/:id?" element={<AccessOrders />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -163,7 +164,7 @@ describe("Access orders: shipping labels", () => {
         },
       },
     });
-    renderAt("/access-orders/7");
+    renderAt("/access/orders/7");
 
     const details = await screen.findByRole("dialog");
     const picker = await openRatePicker(details);
@@ -201,7 +202,7 @@ describe("Access orders: shipping labels", () => {
         data: { message: "Shippo couldn't make the label: The address is not deliverable", code: "LABEL_FAILED" },
       },
     });
-    renderAt("/access-orders/7");
+    renderAt("/access/orders/7");
 
     const picker = await openRatePicker(await screen.findByRole("dialog"));
     fireEvent.click(within(picker).getByRole("button", { name: /Buy label/ }));
@@ -219,7 +220,7 @@ describe("Access orders: shipping labels", () => {
       "businessCard/access-orders/7/rates": { order_id: 7, shipment_id: "shp_1", rates: [] },
     });
     vi.mocked(axios.post).mockRejectedValue({ isAxiosError: true, response: { status: 504, data: "error code: 504" } });
-    renderAt("/access-orders/7");
+    renderAt("/access/orders/7");
 
     const picker = await openRatePicker(await screen.findByRole("dialog"));
     fireEvent.click(within(picker).getByRole("button", { name: /Buy label/ }));
@@ -242,7 +243,7 @@ describe("Access orders: shipping labels", () => {
         ],
       },
     });
-    renderAt("/access-orders/7");
+    renderAt("/access/orders/7");
 
     const details = await screen.findByRole("dialog");
     expect(within(details).getByText("Expedited Shipping")).toBeInTheDocument();
@@ -273,7 +274,7 @@ describe("Access orders: shipping labels", () => {
         },
       },
     });
-    renderAt("/access-orders/7");
+    renderAt("/access/orders/7");
 
     const details = await screen.findByRole("dialog");
     expect(within(details).getByText(/Shippo is still making this label/)).toBeInTheDocument();
@@ -291,7 +292,7 @@ describe("Access orders: shipping labels", () => {
 describe("Access orders: Access Pro alone", () => {
   it("lists it as Access Pro only, with nothing to ship and no label actions", async () => {
     answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/8": proOrder });
-    renderAt("/access-orders");
+    renderAt("/access/orders");
 
     expect(await screen.findByText("GL-20261021-000008")).toBeInTheDocument();
     expect(screen.getByText("Access Pro only")).toBeInTheDocument();
@@ -300,7 +301,7 @@ describe("Access orders: Access Pro alone", () => {
 
   it("shows nothing to ship in its details", async () => {
     answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/8": proOrder });
-    renderAt("/access-orders/8");
+    renderAt("/access/orders/8");
 
     const details = await screen.findByRole("dialog");
     expect(await within(details).findByText("Access Pro only: nothing to ship.")).toBeInTheDocument();
@@ -314,7 +315,7 @@ describe("Access orders: the list", () => {
     answerGets({
       "businessCard/access-orders": { data: [keychainOrder, proOrder], pagination: { total: 120, page: 1, limit: 50 } },
     });
-    renderAt("/access-orders");
+    renderAt("/access/orders");
 
     expect(await screen.findByText("GL-20261020-000007")).toBeInTheDocument();
     expect(axios.get).toHaveBeenCalledWith(LIST_URL, { params: { page: 1, limit: 50 } });
@@ -359,7 +360,7 @@ describe("Access orders: the list", () => {
     answerGets({
       "businessCard/access-orders": { data: [cancelledKeychain, cancelledPro], pagination: { total: 2, page: 1, limit: 50 } },
     });
-    renderAt("/access-orders");
+    renderAt("/access/orders");
 
     await screen.findByText("GL-20261022-000009");
     const keychainRow = rowOf("GL-20261022-000009");
@@ -381,7 +382,7 @@ describe("Access orders: the list", () => {
     answerGets({
       "businessCard/access-orders": { data: [cancelledPro], pagination: { total: 1, page: 1, limit: 50 } },
     });
-    renderAt("/access-orders");
+    renderAt("/access/orders");
 
     await screen.findByText("GL-20261024-000011");
     const row = rowOf("GL-20261024-000011");
@@ -398,7 +399,7 @@ describe("Access orders: cancelling", () => {
     answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/7": keychainOrder });
     const { business_card: _card, ...withoutCard } = keychainOrder;
     vi.mocked(axios.post).mockResolvedValue({ data: { data: { ...withoutCard, fulfillment_status: "cancelled" } } });
-    renderAt("/access-orders/7");
+    renderAt("/access/orders/7");
 
     const details = await screen.findByRole("dialog");
     const confirm = await openCancel(details);
@@ -434,7 +435,7 @@ describe("Access orders: cancelling", () => {
         data: { code: "ORDER_SHIPPED", message: "Its keychain has shipped, so the order can't be cancelled." },
       },
     });
-    renderAt("/access-orders/7");
+    renderAt("/access/orders/7");
 
     const confirm = await openCancel(await screen.findByRole("dialog"));
     fireEvent.click(within(confirm).getByRole("button", { name: "Cancel order" }));
@@ -459,7 +460,7 @@ describe("Access orders: what Stripe recorded, and the checkout", () => {
       refunded_at: "2026-11-02T18:00:00.000Z",
     };
     answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/7": partly });
-    renderAt("/access-orders/7");
+    renderAt("/access/orders/7");
 
     const details = await screen.findByRole("dialog");
     expect(await within(details).findByText("Partly refunded")).toBeInTheDocument();
@@ -471,7 +472,7 @@ describe("Access orders: what Stripe recorded, and the checkout", () => {
   it("shows a full refund", async () => {
     const refunded = { ...proOrder, payment_status: "refunded", refunded_amount: "4.99", refunded_at: "2026-11-02T18:00:00.000Z" };
     answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/8": refunded });
-    renderAt("/access-orders/8");
+    renderAt("/access/orders/8");
 
     const details = await screen.findByRole("dialog");
     expect(await within(details).findByText("Refunded in full")).toBeInTheDocument();
@@ -486,7 +487,7 @@ describe("Access orders: what Stripe recorded, and the checkout", () => {
       disputed_at: "2026-11-02T18:00:00.000Z",
     };
     answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/7": disputed });
-    const { unmount } = renderAt("/access-orders/7");
+    const { unmount } = renderAt("/access/orders/7");
 
     let details = await screen.findByRole("dialog");
     expect(await within(details).findByText("Disputed")).toBeInTheDocument();
@@ -500,7 +501,7 @@ describe("Access orders: what Stripe recorded, and the checkout", () => {
       "businessCard/access-orders": ordersList,
       "businessCard/access-orders/7": { ...disputed, payment_status: "paid", dispute_status: "won" },
     });
-    renderAt("/access-orders/7");
+    renderAt("/access/orders/7");
     details = await screen.findByRole("dialog");
     expect(await within(details).findByText("A dispute was settled")).toBeInTheDocument();
     expect(within(details).getByText(/Stripe says: won\. The payment stands\./)).toBeInTheDocument();
@@ -509,7 +510,7 @@ describe("Access orders: what Stripe recorded, and the checkout", () => {
   it("dates a cancellation, and shows a purchase that was paid but not given", async () => {
     const cancelled = { ...proOrder, cancelled_at: "2026-11-01T18:00:00.000Z", cancel_reason: "Ordered twice" };
     answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/8": cancelled });
-    const { unmount } = renderAt("/access-orders/8");
+    const { unmount } = renderAt("/access/orders/8");
 
     let details = await screen.findByRole("dialog");
     expect(await within(details).findByText(/^Cancelled Nov 01, 2026, .* PT\. Nothing more ships for it.* Reason: Ordered twice$/)).toBeInTheDocument();
@@ -518,7 +519,7 @@ describe("Access orders: what Stripe recorded, and the checkout", () => {
     // Paid, but the API couldn't give it: the order isn't cancelled, and says to refund it.
     const notGiven = { ...proOrder, cancel_reason: "Paid but not given (a second Access Pro): refund it in Stripe." };
     answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/8": notGiven });
-    renderAt("/access-orders/8");
+    renderAt("/access/orders/8");
     details = await screen.findByRole("dialog");
     expect(await within(details).findByText("Paid but not given")).toBeInTheDocument();
     expect(within(details).getByText("Paid but not given (a second Access Pro): refund it in Stripe.")).toBeInTheDocument();
@@ -538,7 +539,7 @@ describe("Access orders: what Stripe recorded, and the checkout", () => {
       },
     };
     answerGets({ "businessCard/access-orders": ordersList, "businessCard/access-orders/7": withCheckout });
-    renderAt("/access-orders/7");
+    renderAt("/access/orders/7");
 
     const details = await screen.findByRole("dialog");
     expect(await within(details).findByText("Access Pro + NFC keychain")).toBeInTheDocument();

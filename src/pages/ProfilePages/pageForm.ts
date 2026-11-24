@@ -70,6 +70,10 @@ export interface PageFormValues {
   image: string;
   cover_image: string;
   about_image: string;
+  /** Nov 24: a professional's pin on the directory's map; left out for brands and by an API from before. */
+  is_on_map?: boolean;
+  /** Nov 24: the sign-in email of a brand page an admin made, while it may be set here; "" for none. */
+  email?: string;
 }
 
 export const NEW_PAGE_VALUES: PageFormValues = {
@@ -89,23 +93,38 @@ export const NEW_PAGE_VALUES: PageFormValues = {
   about_image: "",
 };
 
+/** Whether the page screen offers the map switch: a professional's page, on an API that answers it (Nov 24). */
+export const hasMapSwitch = ({ page, public: shown }: PageView) => shown.type !== "brand" && typeof page.is_on_map === "boolean";
+
+/**
+ * Whether an admin may set the account's sign-in email here (Nov 24): a brand page an admin made, while nobody has
+ * signed in and it has no live Access card. The API also refuses a card that isn't live (409 EMAIL_NOT_EDITABLE).
+ */
+export const canSetEmail = (view: PageView, claimed: boolean | undefined) =>
+  view.email !== undefined && view.page.created_by_admin && claimed !== true && !view.public.access_card;
+
 /** The form's values for a saved page. The address is the one the page answers to: its own slug, else its card's handle. */
-export const toFormValues = ({ slug, page }: PageView): PageFormValues => ({
-  slug: slug ?? "",
-  is_listed: page.is_listed,
-  is_featured: page.is_featured,
-  featured_order: page.featured_order,
-  tagline: page.tagline ?? "",
-  intro: page.intro ?? "",
-  about: page.about ?? "",
-  website: page.website ?? "",
-  social: page.social ?? [],
-  category: page.category ?? "",
-  shipping: page.shipping ?? "",
-  image: page.image ?? "",
-  cover_image: page.cover_image ?? "",
-  about_image: page.about_image ?? "",
-});
+export const toFormValues = (view: PageView): PageFormValues => {
+  const { slug, page } = view;
+  return {
+    slug: slug ?? "",
+    is_listed: page.is_listed,
+    is_featured: page.is_featured,
+    featured_order: page.featured_order,
+    tagline: page.tagline ?? "",
+    intro: page.intro ?? "",
+    about: page.about ?? "",
+    website: page.website ?? "",
+    social: page.social ?? [],
+    category: page.category ?? "",
+    shipping: page.shipping ?? "",
+    image: page.image ?? "",
+    cover_image: page.cover_image ?? "",
+    about_image: page.about_image ?? "",
+    ...(hasMapSwitch(view) ? { is_on_map: page.is_on_map } : {}),
+    email: view.email ?? "",
+  };
+};
 
 /**
  * The body for UpdatePage and CreateBrandPage: the form's fields and nothing else. Empty fields go as null, so the
@@ -133,6 +152,7 @@ export const toPageUpdate = (values: PageFormValues, savedSlug: string): PageUpd
     image: values.image || null,
     cover_image: values.cover_image || null,
     about_image: values.about_image || null,
+    ...(typeof values.is_on_map === "boolean" ? { is_on_map: values.is_on_map } : {}),
   };
 };
 

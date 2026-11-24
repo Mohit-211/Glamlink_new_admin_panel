@@ -27,6 +27,7 @@ import { CSS } from "@dnd-kit/utilities";
 import dayjs from "dayjs";
 import { type WithIndex } from "../../../../utils/table";
 import type { DiscoverEvent } from "../../../../types/journal";
+import { paths } from "../../../../paths";
 
 const { Search } = Input;
 
@@ -265,7 +266,7 @@ const Event = () => {
               padding: 0,
               fontWeight: 500,
             }}
-            onClick={() => navigate(`/edit-event/${record.id}`)}
+            onClick={() => navigate(paths.event(record.id))}
           >
             Edit
           </Button>
@@ -358,8 +359,8 @@ const Event = () => {
           marginBottom: "20px"
         }}>
         <div>
-          <h3>Event</h3>
-          <p>Manage all Event articles — drag the ⠿ handle to reorder</p>
+          <h3>Events</h3>
+          <p>Manage all events — drag the ⠿ handle to reorder</p>
         </div>
 
         <Space>
@@ -372,7 +373,7 @@ const Event = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate("/add-event")}
+            onClick={() => navigate(paths.newEvent)}
           >
             Add Event
           </Button>

@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { Avatar, Button, Input, Segmented, Switch, Table, Tag, Tooltip, message, type TableColumnsType } from "antd";
-import { PlusOutlined, SearchOutlined, ShopOutlined, StarFilled, UserOutlined } from "@ant-design/icons";
+import { PlusOutlined, SearchOutlined, ShopOutlined, StarFilled, UploadOutlined, UserOutlined } from "@ant-design/icons";
 import PageHeader, { Panel } from "../../components/PageHeader";
 import { GetPages } from "../../services/Api/ProfilesApi";
 import { apiErrorMessage } from "../../utils/apiError";
 import type { PageListParams, PageRow, PageType } from "../../types/profile";
 import { TYPE_COLOR, TYPE_LABEL, publicPageUrl, rowStatus, type PageRouteState } from "./pageStatus";
 import styles from "./ProfilePages.module.scss";
+import { paths } from "../../paths";
 
 const PAGE_SIZE = 50;
 
@@ -26,17 +27,20 @@ interface FilterChanges {
   search?: string;
   type?: TypeFilter;
   featured?: boolean;
+  /** Only the pages off the directory's map. */
+  offMap?: boolean;
   page?: number;
 }
 
-// The filters live in the address (?search=…&type=brand&featured=1&page=2), so coming back from a page's screens
-// finds the list as it was. Any change but the page number's starts again from the first page.
+// The filters live in the address (?search=…&type=brand&featured=1&map=off&page=2), so coming back from a page's
+// screens finds the list as it was. Any change but the page number's starts again from the first page.
 const withChanges = (prev: URLSearchParams, changes: FilterChanges) => {
   const next = new URLSearchParams(prev);
   const put = (key: string, value: string | null) => (value ? next.set(key, value) : next.delete(key));
   if (changes.search !== undefined) put("search", changes.search);
   if (changes.type !== undefined) put("type", changes.type === "all" ? null : changes.type);
   if (changes.featured !== undefined) put("featured", changes.featured ? "1" : null);
+  if (changes.offMap !== undefined) put("map", changes.offMap ? "off" : null);
   put("page", changes.page && changes.page > 1 ? String(changes.page) : null);
   return next;
 };
@@ -59,6 +63,7 @@ const ProfilePages = () => {
   const search = params.get("search") ?? "";
   const type = typeFrom(params.get("type"));
   const featured = params.get("featured") === "1";
+  const offMap = params.get("map") === "off";
   const page = Math.max(1, Number.parseInt(params.get("page") ?? "", 10) || 1);
 
   const [searchText, setSearchText] = useState(search);
@@ -83,6 +88,7 @@ const ProfilePages = () => {
     if (search) query.search = search;
     if (type) query.type = type;
     if (featured) query.featured = true;
+    if (offMap) query.on_map = false;
     setLoading(true);
     GetPages(query)
       .then((res) => {
@@ -100,7 +106,7 @@ const ProfilePages = () => {
     return () => {
       current = false;
     };
-  }, [search, type, featured, page]);
+  }, [search, type, featured, offMap, page]);
 
   // The page's screens learn from the row whether the account can sign in, and where to come back to.
   const stateFor = (row: PageRow): PageRouteState => ({
@@ -124,7 +130,7 @@ const ProfilePages = () => {
             className={styles.thumb}
           />
           <div className={styles.pageText}>
-            <Link to={`/pages/${row.id}`} state={stateFor(row)} className={styles.pageName}>
+            <Link to={paths.profilePage(row.id)} state={stateFor(row)} className={styles.pageName}>
               {row.name || `Account #${row.id}`}
             </Link>
             {(row.tagline || row.specialty) && <div className={styles.sub}>{row.tagline || row.specialty}</div>}
@@ -174,6 +180,16 @@ const ProfilePages = () => {
                 <Tag color="gold">Unclaimed</Tag>
               </Tooltip>
             )}
+            {row.email === null && (
+              <Tooltip title="No sign-in email yet: add one on the page's screen, then send the claim email.">
+                <Tag>No email</Tag>
+              </Tooltip>
+            )}
+            {row.is_on_map === false && (
+              <Tooltip title="An admin took the pin off the directory's map. The page and the directory's list still show it.">
+                <Tag color="orange">Off the map</Tag>
+              </Tooltip>
+            )}
           </div>
         );
       },
@@ -197,10 +213,10 @@ const ProfilePages = () => {
       width: 220,
       render: (_, row) => (
         <div className={styles.actions}>
-          <Link to={`/pages/${row.id}`} state={stateFor(row)}>
+          <Link to={paths.profilePage(row.id)} state={stateFor(row)}>
             Edit
           </Link>
-          <Link to={`/pages/${row.id}/analytics`} state={stateFor(row)}>
+          <Link to={paths.profilePageAnalytics(row.id)} state={stateFor(row)}>
             Analytics
           </Link>
           {row.visible && row.slug ? (
@@ -217,17 +233,22 @@ const ProfilePages = () => {
     },
   ];
 
-  const filtered = Boolean(search || type || featured);
+  const filtered = Boolean(search || type || featured || offMap);
 
   return (
     <div>
       <PageHeader
-        title="Professional and brand pages"
+        title="Profile Pages"
         subtitle="Every page on the website (glamlink.net/profiles/…), shown or not: what is set on it and how it stands."
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("/pages/new")}>
-            New brand page
-          </Button>
+          <>
+            <Button icon={<UploadOutlined />} onClick={() => navigate(paths.importBrands)}>
+              Import brands
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate(paths.newBrandPage)}>
+              New brand page
+            </Button>
+          </>
         }
       />
       <Panel>
@@ -254,6 +275,15 @@ const ProfilePages = () => {
               onChange={(checked) => change({ featured: checked })}
             />
             <label htmlFor="pages-featured-only">Featured only</label>
+          </span>
+          <span className={styles.switchLabel}>
+            <Switch
+              id="pages-off-map-only"
+              size="small"
+              checked={offMap}
+              onChange={(checked) => change({ offMap: checked })}
+            />
+            <label htmlFor="pages-off-map-only">Off the map only</label>
           </span>
         </div>
         <Table<PageRow>

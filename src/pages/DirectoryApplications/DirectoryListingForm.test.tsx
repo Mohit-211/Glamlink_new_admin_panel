@@ -79,9 +79,9 @@ const renderAt = (path: string) =>
   render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/directory-applications/add" element={<AddDirectoryListing />} />
-        <Route path="/directory-applications/edit/:id" element={<EditDirectoryListing />} />
-        <Route path="/directory-applications/:id" element={<p>Listing page</p>} />
+        <Route path="/directory/applications/new" element={<AddDirectoryListing />} />
+        <Route path="/directory/applications/:id/edit" element={<EditDirectoryListing />} />
+        <Route path="/directory/applications/:id" element={<p>Listing page</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -95,7 +95,7 @@ const photo = (name: string) => new File(["photo"], name, { type: "image/png" })
 describe("Adding a listing", () => {
   it("sends the fields filled in, approved as a professional by default", async () => {
     vi.mocked(axios.post).mockResolvedValue({ data: { data: { ...LISTING, id: 9, email: "nia@example.com" } } });
-    renderAt("/directory-applications/add");
+    renderAt("/directory/applications/new");
 
     type("Name", "Nia Brows");
     type("Email", "nia@example.com");
@@ -131,7 +131,7 @@ describe("Adding a listing", () => {
 
   it("leaves a new listing pending when asked: no account type then", async () => {
     vi.mocked(axios.post).mockResolvedValue({ data: { data: { ...LISTING, id: 9, status: "pending" } } });
-    renderAt("/directory-applications/add");
+    renderAt("/directory/applications/new");
 
     type("Name", "Bo Owner");
     type("Email", "bo@example.com");
@@ -149,7 +149,7 @@ describe("Adding a listing", () => {
 
   it("adds a brand", async () => {
     vi.mocked(axios.post).mockResolvedValue({ data: { data: { ...LISTING, id: 9 } } });
-    renderAt("/directory-applications/add");
+    renderAt("/directory/applications/new");
 
     type("Name", "Bo Owner");
     type("Email", "bo@example.com");
@@ -166,7 +166,7 @@ describe("Adding a listing", () => {
   });
 
   it("needs a name and a valid email before sending", async () => {
-    renderAt("/directory-applications/add");
+    renderAt("/directory/applications/new");
 
     type("Email", "bo@");
     fireEvent.click(screen.getByRole("button", { name: "Add listing" }));
@@ -180,7 +180,7 @@ describe("Adding a listing", () => {
 describe("Editing a listing", () => {
   it("sends only the fields that changed", async () => {
     vi.mocked(axios.put).mockResolvedValue({ data: { data: LISTING } });
-    renderAt("/directory-applications/edit/7");
+    renderAt("/directory/applications/7/edit");
 
     await screen.findByDisplayValue("Lash Artist");
     type("Professional title", "Lash & Brow Artist");
@@ -193,7 +193,7 @@ describe("Editing a listing", () => {
 
   it("keeps a location's other keys when it changes", async () => {
     vi.mocked(axios.put).mockResolvedValue({ data: { data: LISTING } });
-    renderAt("/directory-applications/edit/7");
+    renderAt("/directory/applications/7/edit");
 
     await screen.findByDisplayValue("9 Lash Ln");
     type("Address", "10 Lash Ln");
@@ -208,7 +208,7 @@ describe("Editing a listing", () => {
 
   it("sends photos as multipart: a new profile photo, a new gallery photo with its caption, a removed one", async () => {
     vi.mocked(axios.put).mockResolvedValue({ data: { data: LISTING } });
-    const { container } = renderAt("/directory-applications/edit/7");
+    const { container } = renderAt("/directory/applications/7/edit");
     await screen.findByDisplayValue("Lash Artist");
 
     const [profileInput, galleryInput] = container.querySelectorAll('input[type="file"]');
@@ -243,7 +243,7 @@ describe("Editing a listing", () => {
         data: { success: false, message: "Please enter a valid phone number.", code: "INVALID_INPUT", details: { field: "phone" } },
       },
     });
-    renderAt("/directory-applications/edit/7");
+    renderAt("/directory/applications/7/edit");
 
     await screen.findByDisplayValue("Lash Artist");
     type("Phone", "702-555-0111 ext 9");

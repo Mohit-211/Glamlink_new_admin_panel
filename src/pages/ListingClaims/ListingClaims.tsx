@@ -10,6 +10,7 @@ import { recountBadges } from "../../utils/badges";
 import { CARD_TYPE_COLOR, CARD_TYPE_LABEL, cardTypeOf } from "../BusinessCard/cardType";
 import type { ClaimAction, ClaimStatus, ListingClaim } from "../../types/listingClaim";
 import styles from "./ListingClaims.module.scss";
+import { paths } from "../../paths";
 
 // The API's largest page.
 const PAGE_SIZE = 50;
@@ -70,6 +71,24 @@ const MapsLink = ({ claim, children }: { claim: ListingClaim; children: React.Re
     <span className={styles.muted}>{claim.place_id ?? "-"}</span>
   );
 
+/**
+ * Whether the claim keeps the listing out of the directory's Google results: since Nov 24, while its card is live,
+ * verified or not. An API from before answers no `hides_listing`: then only a verified claim did.
+ */
+const hidesListing = (claim: ListingClaim) => claim.hides_listing ?? Boolean(claim.verified_at);
+
+/** Whether the directory's Google results show the listing now. */
+const GoogleResults = ({ claim }: { claim: ListingClaim }) =>
+  hidesListing(claim) ? (
+    <Tooltip title="The card is live, so the listing is out of the directory's Google results, checked or not. Rejecting the claim brings it back.">
+      <Tag color="volcano">Hidden from Google results</Tag>
+    </Tooltip>
+  ) : (
+    <Tooltip title="The card isn't live yet: the listing leaves the directory's Google results once it is.">
+      <Tag>Still in Google results</Tag>
+    </Tooltip>
+  );
+
 interface ReviewClaimModalProps {
   claim: ListingClaim;
   action: ClaimAction;
@@ -84,6 +103,7 @@ const ReviewClaimModal = ({ claim, action, onClose, onReviewed, onGone }: Review
   const [saving, setSaving] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   const verifying = action === "verify";
+  const hides = hidesListing(claim);
 
   const submit = async () => {
     try {
@@ -91,11 +111,7 @@ const ReviewClaimModal = ({ claim, action, onClose, onReviewed, onGone }: Review
       setRefusal(null);
       await ReviewListingClaim(claim.business_card_id, action);
       message.success(
-        verifying
-          ? "Claim verified: the Google listing has left the directory"
-          : claim.verified_at
-            ? "Claim rejected: the Google listing is back in the directory"
-            : "Claim rejected",
+        verifying ? "Claim verified" : hides ? "Claim rejected: the Google listing is back in the directory" : "Claim rejected",
       );
       onReviewed();
     } catch (err) {
@@ -130,16 +146,16 @@ const ReviewClaimModal = ({ claim, action, onClose, onReviewed, onGone }: Review
               Check first that the claim is genuine: compare the card's name, business and email with{" "}
               <MapsLink claim={claim}>the listing on Google Maps</MapsLink>.
             </li>
-            <li>Once verified, the Google listing leaves the directory's Google results.</li>
+            <li>
+              {hides
+                ? "The listing is already out of the directory's Google results, as the card is live. Verifying marks the claim as checked."
+                : "Verifying marks the claim as checked. The listing leaves the directory's Google results once the card is live."}
+            </li>
           </>
         ) : (
           <>
             <li>The claim is taken off the card; the card itself doesn't change.</li>
-            <li>
-              {claim.verified_at
-                ? "The Google listing shows in the directory again."
-                : "The Google listing stays in the directory."}
-            </li>
+            <li>{hides ? "The Google listing shows in the directory again." : "The Google listing stays in the directory."}</li>
           </>
         )}
       </ul>
@@ -149,8 +165,9 @@ const ReviewClaimModal = ({ claim, action, onClose, onReviewed, onGone }: Review
 };
 
 /**
- * Claims of the directory's Google listings, made through the Access form. Verifying one takes its Google listing out
- * of the directory; rejecting one clears it from the card.
+ * Claims of the directory's Google listings, made through the Access form. Since Nov 24 a claim hides its Google listing
+ * as soon as its card is live, before anyone checks it: verifying marks it checked, rejecting clears it from the card
+ * and brings the listing back.
  */
 const ListingClaims = () => {
   const [params, setParams] = useSearchParams();
@@ -208,7 +225,7 @@ const ListingClaims = () => {
       render: (_, row) => (
         <div>
           <Tooltip title="Open the card">
-            <Link to={`/editBusinessCard/${row.business_card_id}`} className={styles.primaryCell}>
+            <Link to={paths.card(row.business_card_id)} className={styles.primaryCell}>
               {row.name}
             </Link>
           </Tooltip>
@@ -249,11 +266,14 @@ const ListingClaims = () => {
     {
       title: "Google listing",
       key: "listing",
-      width: 180,
+      width: 220,
       render: (_, row) => (
-        <MapsLink claim={row}>
-          Open on Google Maps <ExportOutlined />
-        </MapsLink>
+        <div className={styles.listingCell}>
+          <MapsLink claim={row}>
+            Open on Google Maps <ExportOutlined />
+          </MapsLink>
+          <GoogleResults claim={row} />
+        </div>
       ),
     },
     {
@@ -296,8 +316,8 @@ const ListingClaims = () => {
   return (
     <div>
       <PageHeader
-        title="Listing claims"
-        subtitle="Businesses claimed from the directory's Google listings through the Access form. Verifying a claim takes its Google listing out of the directory; rejecting it clears the claim from the card."
+        title="Listing Claims"
+        subtitle="Businesses claimed from the directory's Google listings through the Access form. A claim takes its Google listing out of the directory's Google results as soon as its card is live, before anyone checks it: reject a false claim quickly to bring the listing back, verify a genuine one."
         extra={
           <Segmented<StatusFilter>
             options={FILTERS}

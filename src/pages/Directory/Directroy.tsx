@@ -235,8 +235,8 @@ const Directroy = () => {
 				    marginBottom: "20px"
 				}}>
 				<div>
-					<h3 className="page-title">DIRECTORY MANAGEMENT</h3>
-					<p className="page-sub-title">Manage professional directories</p>
+					<h3 className="page-title">Sections</h3>
+					<p className="page-sub-title">The sections of the website's directory, with their categories</p>
 				</div>
 
 				<div style={{

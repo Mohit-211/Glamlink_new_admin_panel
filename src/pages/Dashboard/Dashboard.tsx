@@ -31,6 +31,7 @@ import { GetSubscriptions } from "../../services/Api/AccessAdminApi";
 import type { SearchTerm } from "../../types/content";
 import type { FulfillmentStatus } from "../../types/businessCard";
 import styles from "./Dashboard.module.scss";
+import { paths } from "../../paths";
 
 interface Tile {
   key: string;
@@ -47,20 +48,20 @@ const SECTIONS: { title: string; tiles: Tile[] }[] = [
   {
     title: "Needs attention",
     tiles: [
-      { key: "pendingCards", title: "Card requests to review", icon: <IdcardOutlined />, to: "/digital-card", attention: true },
+      { key: "pendingCards", title: "Card requests to review", icon: <IdcardOutlined />, to: paths.cards, attention: true },
       {
         key: "pendingApplications",
         title: "Directory applications to review",
         icon: <AuditOutlined />,
-        to: "/directory-applications",
+        to: paths.directoryApplications,
         attention: true,
       },
-      { key: "pendingForms", title: "Applicant forms to review", icon: <FormOutlined />, to: "/form", attention: true },
+      { key: "pendingForms", title: "Applicant forms to review", icon: <FormOutlined />, to: paths.applicantForms, attention: true },
       {
         key: "ordersToShip",
         title: "Keychain orders to ship",
         icon: <TruckOutlined />,
-        to: "/access-orders",
+        to: paths.orders,
         hint: "Paid, pending or processing; cancelled orders excluded",
         attention: true,
       },
@@ -69,14 +70,14 @@ const SECTIONS: { title: string; tiles: Tile[] }[] = [
   {
     title: "On the website",
     tiles: [
-      { key: "liveCards", title: "Live Access cards", icon: <IdcardOutlined />, to: "/digital-card", hint: "Accepted" },
-      { key: "professionals", title: "Professionals", icon: <SolutionOutlined />, to: "/professionals" },
-      { key: "pages", title: "Professional & brand pages", icon: <ProfileOutlined />, to: "/pages", hint: "Shown or hidden" },
+      { key: "liveCards", title: "Live Access cards", icon: <IdcardOutlined />, to: paths.cards, hint: "Accepted" },
+      { key: "professionals", title: "Professionals", icon: <SolutionOutlined />, to: paths.professionals },
+      { key: "pages", title: "Professional & brand pages", icon: <ProfileOutlined />, to: paths.profilePages, hint: "Shown or hidden" },
       {
         key: "proSeats",
         title: "Access Pro subscribers",
         icon: <CrownOutlined />,
-        to: "/access-subscriptions",
+        to: paths.subscriptions,
         hint: "Active: paying and complimentary",
       },
     ],
@@ -84,16 +85,16 @@ const SECTIONS: { title: string; tiles: Tile[] }[] = [
   {
     title: "Last 30 days",
     tiles: [
-      { key: "cardViews", title: "Access card views", icon: <EyeOutlined />, to: "/access-analytics" },
-      { key: "cardClicks", title: "Access card clicks", icon: <AimOutlined />, to: "/access-analytics" },
+      { key: "cardViews", title: "Access card views", icon: <EyeOutlined />, to: paths.cardAnalytics },
+      { key: "cardClicks", title: "Access card clicks", icon: <AimOutlined />, to: paths.cardAnalytics },
     ],
   },
   {
     title: "Inquiries",
     tiles: [
-      { key: "newsletter", title: "Newsletter subscribers", icon: <MailOutlined />, to: "/newsletter" },
-      { key: "featureRequests", title: "Feature requests", icon: <StarOutlined />, to: "/feature-requests" },
-      { key: "partnerInquiries", title: "Partner inquiries", icon: <UsergroupAddOutlined />, to: "/partner-inquiries" },
+      { key: "newsletter", title: "Newsletter subscribers", icon: <MailOutlined />, to: paths.newsletter },
+      { key: "featureRequests", title: "Feature requests", icon: <StarOutlined />, to: paths.featureRequests },
+      { key: "partnerInquiries", title: "Partner inquiries", icon: <UsergroupAddOutlined />, to: paths.partnerInquiries },
     ],
   },
 ];
@@ -178,7 +179,7 @@ const TermList = ({ title, terms, empty }: { title: string; terms: SearchTerm[] 
   <Panel>
     <div className={styles.listTitle}>
       <h4>{title}</h4>
-      <Link to="/search-terms">All search terms</Link>
+      <Link to={paths.searchTerms}>All search terms</Link>
     </div>
     <List
       size="small"

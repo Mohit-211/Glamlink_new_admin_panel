@@ -14,6 +14,14 @@
   color: var(--color-text-tertiary);
 }
 
+/* The Maps link, and whether the directory's Google results show the listing. */
+.listingCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
 .rowActions {
   display: flex;
   flex-wrap: wrap;

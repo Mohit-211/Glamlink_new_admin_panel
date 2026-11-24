@@ -8,6 +8,7 @@ import { showFieldError } from "../../utils/formErrors";
 import type { AccessProduct, PriceChange, PriceChangeResult } from "../../types/access";
 import { dateTime, listPrice, money, productName, soldProducts, toCents, toDollars } from "./pricing";
 import styles from "./AccessPricing.module.scss";
+import { paths } from "../../paths";
 
 interface PricesTabProps {
   products: AccessProduct[];
@@ -138,7 +139,7 @@ const ChangeResult = ({ result, onClose }: { result: PriceChangeResult; onClose:
             <ul className={styles.failures}>
               {failed.map((failure) => (
                 <li key={failure.user_id}>
-                  <Link to={`/viewProfessionals/${failure.user_id}`}>Account #{failure.user_id}</Link>: {failure.error}
+                  <Link to={paths.professional(failure.user_id)}>Account #{failure.user_id}</Link>: {failure.error}
                 </li>
               ))}
             </ul>

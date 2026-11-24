@@ -47,6 +47,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { apiErrorMessage } from "../../../../utils/apiError";
 import { type WithIndex } from "../../../../utils/table";
 import type { Shop } from "../../../../types/journal";
+import { paths } from "../../../../paths";
+import { asCsvFile } from "../../../../utils/csv";
 
 const { Search } = Input;
 
@@ -323,7 +325,7 @@ const Shop = () => {
           <Button
             type="link"
             style={{ padding: 0, fontWeight: 500 }}
-            onClick={() => navigate(`/edit-shop/${record.id}`)}
+            onClick={() => navigate(paths.product(record.id))}
           >
             Edit
           </Button>
@@ -370,7 +372,7 @@ const Shop = () => {
       setData(newData);
       setBackupData(newData);
     } catch {
-      message.error("Failed to load Shop");
+      message.error("Failed to load products");
     } finally {
       setLoading(false);
     }
@@ -389,15 +391,15 @@ const Shop = () => {
 
   const handleDelete = (id: number) => {
     Modal.confirm({
-      title: "Delete Shop",
-      content: "Are you sure you want to delete this Shop?",
+      title: "Delete Product",
+      content: "Are you sure you want to delete this product?",
       onOk: async () => {
         try {
           await DeleteShop([id]);
-          message.success("Shop deleted successfully");
+          message.success("Product deleted successfully");
           getData();
         } catch (err) {
-          message.error("Failed to delete Shop");
+          message.error("Failed to delete product");
         }
       },
     });
@@ -457,7 +459,8 @@ const Shop = () => {
     }
 
     const formData = new FormData();
-    formData.append("csv_file", fileList[0]);
+    // As text/csv, whatever type the browser gave the file (A-CNT-5).
+    formData.append("csv_file", asCsvFile(fileList[0]));
 
     setUploading(true);
     try {
@@ -503,8 +506,8 @@ const Shop = () => {
           marginBottom: "20px"
         }}>
         <div>
-          <h3>Shop</h3>
-          <p>Manage all Shop articles — drag the ⠿ handle to reorder</p>
+          <h3>Products</h3>
+          <p>Manage all products — drag the ⠿ handle to reorder</p>
         </div>
 
         <Space>
@@ -523,9 +526,9 @@ const Shop = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate("/add-shop")}
+            onClick={() => navigate(paths.newProduct)}
           >
-            Add Shop
+            Add Product
           </Button>
         </Space>
       </div>
@@ -560,7 +563,7 @@ const Shop = () => {
       </DndContext>
 
       <Modal
-        title="Bulk Import Shop Products"
+        title="Bulk Import Products"
         open={uploadModalOpen}
         onCancel={closeUploadModal}
         width={600}

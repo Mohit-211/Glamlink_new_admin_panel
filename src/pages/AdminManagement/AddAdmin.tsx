@@ -8,6 +8,7 @@ import { message, Button, Card, Form, Input, Select } from "antd";
 
 import { CheckOutlined, CloseOutlined } from "@ant-design/icons";
 import { apiErrorMessage, apiErrorStatus } from "../../utils/apiError";
+import { paths } from "../../paths";
 
 const AddAdmin = () => {
   const [name, setName] = useState("");
@@ -51,7 +52,7 @@ const AddAdmin = () => {
         message.success("Admin added successfully");
       }
       setTimeout(() => {
-        navigate("/adminList");
+        navigate(paths.admins);
       }, 1000);
     } catch (error) {
       if (apiErrorStatus(error) === 400) {
@@ -65,7 +66,7 @@ const AddAdmin = () => {
   };
 
   const navigateToAdmin = () => {
-    navigate("/adminList");
+    navigate(paths.admins);
   };
 
   return (

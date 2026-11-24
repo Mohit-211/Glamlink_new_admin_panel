@@ -31,6 +31,8 @@ interface PageFieldsProps {
   type: PageType | null;
   /** A new brand page: an empty address is made from the name. */
   creating?: boolean;
+  /** Offer "Show on directory map" (a professional's page, on an API that answers it). */
+  mapSwitch?: boolean;
 }
 
 /** What a fallback looks like now, under its field. */
@@ -66,7 +68,7 @@ const useSpecialties = (wanted: boolean) => {
  * The fields an admin sets on a page (PUT /profiles/admin/:userId), shared by the page screen and "New brand page".
  * Goes inside a Form whose values are PageFormValues.
  */
-const PageFields = ({ fallbacks, savedSlug, type, creating = false }: PageFieldsProps) => {
+const PageFields = ({ fallbacks, savedSlug, type, creating = false, mapSwitch = false }: PageFieldsProps) => {
   const form = Form.useFormInstance<PageFormValues>();
   const featured = Form.useWatch("is_featured", form);
   const about = Form.useWatch("about", form) ?? "";
@@ -129,6 +131,16 @@ const PageFields = ({ fallbacks, savedSlug, type, creating = false }: PageFields
       >
         <Switch />
       </Form.Item>
+      {mapSwitch && (
+        <Form.Item
+          name="is_on_map"
+          label="Show on directory map"
+          valuePropName="checked"
+          extra="Off: only the pin leaves the directory's map. The page, and the directory's list of professionals near a visitor, still show them. Only admins set this."
+        >
+          <Switch />
+        </Form.Item>
+      )}
       <div className={styles.inlineFields}>
         <Form.Item
           name="is_featured"

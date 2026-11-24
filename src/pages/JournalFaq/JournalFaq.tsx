@@ -247,7 +247,7 @@ const JournalFaq = () => {
       <div className={styles.headerCard}>
         <div>
           <h3 className={styles.headerTitle}>
-            Journal FAQs
+            FAQs
           </h3>
 
           <p className={styles.headerSubtitle}>

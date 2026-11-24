@@ -7,6 +7,7 @@ import { message } from "antd";
 import logo from "../../assets/glamlink-logo-black.png";
 import { apiErrorMessage, apiErrorStatus } from "../../utils/apiError";
 import { setToken } from "../../utils/session";
+import { paths } from "../../paths";
 
 interface LoginValues {
   email: string;
@@ -30,7 +31,7 @@ const Login = () => {
         message.success("Logged In Successfully");
         setTimeout(() => {
           setToken(token);
-          navigate("/");
+          navigate(paths.dashboard);
         }, 1000);
       })
       .catch((error) => {

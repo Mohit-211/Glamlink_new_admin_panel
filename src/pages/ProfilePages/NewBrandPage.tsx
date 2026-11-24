@@ -9,6 +9,7 @@ import PageFields from "./PageFields";
 import { LIMITS, NEW_PAGE_VALUES, toPageUpdate, type PageFormValues } from "./pageForm";
 import type { PageRouteState } from "./pageStatus";
 import styles from "./ProfilePages.module.scss";
+import { paths } from "../../paths";
 
 interface NewBrandValues extends PageFormValues {
   name: string;
@@ -18,8 +19,9 @@ interface NewBrandValues extends PageFormValues {
 const INITIAL_VALUES: NewBrandValues = { ...NEW_PAGE_VALUES, name: "", email: "" };
 
 /**
- * "New brand page" (route /pages/new): a page for a brand with no Glamlink login yet. The API makes the brand's
- * account without a password; the page shows without an Access card, and the brand claims it from an email.
+ * "New brand page" (route /professionals/pages/new): a page for a brand with no Glamlink login yet. The API makes the
+ * brand's account without a password; the page shows without an Access card, and the brand claims it from an email.
+ * The email is optional since Nov 24: it can be added on the page's screen later.
  */
 const NewBrandPage = () => {
   const navigate = useNavigate();
@@ -32,11 +34,16 @@ const NewBrandPage = () => {
     setSaving(true);
     setExistingId(null);
     try {
-      const res = await CreateBrandPage({ name: name.trim(), email: email.trim(), ...toPageUpdate(page, "") });
+      // The email is optional since Nov 24: without one the page shows, and its screen takes the email later.
+      const res = await CreateBrandPage({
+        name: name.trim(),
+        ...(email.trim() ? { email: email.trim() } : {}),
+        ...toPageUpdate(page, ""),
+      });
       message.success("Brand page created");
       // A new brand account has no password: the page's screen offers the claim email.
       const state: PageRouteState = { claimed: false, created: true };
-      navigate(`/pages/${res.data.data.user_id}`, { state });
+      navigate(paths.profilePage(res.data.data.user_id), { state });
     } catch (err) {
       if (apiErrorCode(err) === "ACCOUNT_EXISTS") {
         setExistingId(apiErrorBody(err)?.details?.user_id ?? null);
@@ -56,7 +63,7 @@ const NewBrandPage = () => {
       <PageHeader
         title="New brand page"
         subtitle="For a brand with no Glamlink login yet. Its page shows without an Access card; send it a claim email when it should sign in and edit the page itself."
-        back="/pages"
+        back={paths.profilePages}
       />
       <Panel>
         <Form<NewBrandValues>
@@ -83,13 +90,10 @@ const NewBrandPage = () => {
             <Form.Item
               name="email"
               label="Email"
-              rules={[
-                { required: true, whitespace: true, message: "Enter the brand's email" },
-                { type: "email", message: "Enter a valid email address" },
-              ]}
-              extra="The brand signs in with it, and the claim email goes there. It can't have a Glamlink account yet."
+              rules={[{ type: "email", message: "Enter a valid email address" }]}
+              extra="Optional. The brand signs in with it, and the claim email goes there; it can't have a Glamlink account yet. Without one the page still shows: add the email on its page before sending the claim email."
             >
-              <Input type="email" />
+              <Input type="email" placeholder="No email yet" />
             </Form.Item>
           </div>
           {existingId !== null && (
@@ -98,7 +102,7 @@ const NewBrandPage = () => {
               showIcon
               title="This email already has an account"
               description="A brand page is made with a new account, so this email can't be used. If that account is a professional or a brand, edit its page instead."
-              action={<Button onClick={() => navigate(`/pages/${existingId}`)}>Open its page</Button>}
+              action={<Button onClick={() => navigate(paths.profilePage(existingId))}>Open its page</Button>}
               className={styles.block}
             />
           )}
@@ -109,7 +113,7 @@ const NewBrandPage = () => {
             <Button type="primary" htmlType="submit" loading={saving}>
               Create brand page
             </Button>
-            <Button onClick={() => navigate("/pages")} disabled={saving}>
+            <Button onClick={() => navigate(paths.profilePages)} disabled={saving}>
               Cancel
             </Button>
           </div>

@@ -50,7 +50,7 @@ describe("Dashboard", () => {
       <MemoryRouter>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/digital-card" element={<p>Card requests screen</p>} />
+          <Route path="/access/cards" element={<p>Card requests screen</p>} />
         </Routes>
       </MemoryRouter>,
     );

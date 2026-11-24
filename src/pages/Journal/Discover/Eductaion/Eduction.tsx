@@ -26,6 +26,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { type WithIndex } from "../../../../utils/table";
 import type { Education } from "../../../../types/journal";
+import { paths } from "../../../../paths";
 
 const { Search } = Input;
 
@@ -257,7 +258,7 @@ const Education = () => {
               padding: 0,
               fontWeight: 500,
             }}
-            onClick={() => navigate(`/edit-education/${record.id}`)}
+            onClick={() => navigate(paths.educationItem(record.id))}
           >
             Edit
           </Button>
@@ -350,7 +351,7 @@ const Education = () => {
           marginBottom: "20px"
         }}>
         <div>
-          <h3>EDUCATION</h3>
+          <h3>Education</h3>
           <p>Manage all education articles — drag the ⠿ handle to reorder</p>
         </div>
 
@@ -364,9 +365,9 @@ const Education = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate("/add-education")}
+            onClick={() => navigate(paths.newEducationItem)}
           >
-            Add education
+            Add Education
           </Button>
         </Space>
       </div>

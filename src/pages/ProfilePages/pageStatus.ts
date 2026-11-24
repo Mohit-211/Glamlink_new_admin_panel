@@ -1,6 +1,7 @@
 import { useLocation } from "react-router";
 import { websiteUrl } from "../../utils/website";
 import type { PageRow, PageType, PageView } from "../../types/profile";
+import { paths } from "../../paths";
 
 /** A page's address on the website. */
 export const publicPageUrl = (slug: string) => websiteUrl(`/profiles/${slug}`);
@@ -32,7 +33,7 @@ export const usePageRouteState = (): PageRouteState => {
   const { claimed, from, created } = state as Record<string, unknown>;
   return {
     claimed: typeof claimed === "boolean" ? claimed : undefined,
-    from: typeof from === "string" && from.startsWith("/pages") ? from : undefined,
+    from: typeof from === "string" && from.startsWith(paths.profilePages) ? from : undefined,
     created: created === true,
   };
 };

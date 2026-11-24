@@ -4,6 +4,7 @@ import { GetAdminProfile } from "../../services/Api/Api";
 import { Card, Typography, Button, Row, Col } from "antd";
 import { ArrowLeftOutlined, UserOutlined, MailOutlined, SafetyOutlined } from "@ant-design/icons";
 import type { Admin } from "../../types/admin";
+import { paths } from "../../paths";
 
 const { Title, Text } = Typography;
 
@@ -25,7 +26,7 @@ const ViewAdmin = () => {
   }, []);
 
   const navigateToAdmin = () => {
-    navigate("/");
+    navigate(paths.dashboard);
   };
 
   const fields = [

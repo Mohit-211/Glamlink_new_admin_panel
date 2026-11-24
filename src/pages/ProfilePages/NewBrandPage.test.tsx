@@ -26,10 +26,10 @@ const PageScreen = () => {
 
 const renderForm = () =>
   render(
-    <MemoryRouter initialEntries={["/pages/new"]}>
+    <MemoryRouter initialEntries={["/professionals/pages/new"]}>
       <Routes>
-        <Route path="/pages/new" element={<NewBrandPage />} />
-        <Route path="/pages/:userId" element={<PageScreen />} />
+        <Route path="/professionals/pages/new" element={<NewBrandPage />} />
+        <Route path="/professionals/pages/:userId" element={<PageScreen />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -68,6 +68,19 @@ describe("Professional and brand pages: a new brand page", () => {
       cover_image: null,
       about_image: null,
     });
+  });
+
+  it("makes a brand page without an email: the email is optional since Nov 24", async () => {
+    vi.mocked(axios.post).mockResolvedValue({ data: { data: { user_id: 901 } } });
+    renderForm();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Brand name" }), { target: { value: "Glow Co" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create brand page" }));
+
+    expect(await screen.findByText("Page 901, claimed: false, created: true")).toBeInTheDocument();
+    const body = vi.mocked(axios.post).mock.lastCall?.[1] as Record<string, unknown>;
+    expect(body.name).toBe("Glow Co");
+    expect(body).not.toHaveProperty("email");
   });
 
   it("offers the page of the account that already has the email", async () => {
